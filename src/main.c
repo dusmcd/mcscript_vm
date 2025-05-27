@@ -7,8 +7,16 @@
 int main() {
   Chunk chunk;
   initChunk(&chunk);
+  int constant = addConstant(&chunk, 1.5);
+
+  writeChunk(&chunk, OP_CONSTANT);
+  writeChunk(&chunk, constant);
+
+  constant = addConstant(&chunk, 1000);
+
+  writeChunk(&chunk, OP_CONSTANT);
+  writeChunk(&chunk, constant);
   writeChunk(&chunk, OP_RETURN);
-  writeChunk(&chunk, 15);
 
   disassembleChunk(&chunk, "instructions");
 

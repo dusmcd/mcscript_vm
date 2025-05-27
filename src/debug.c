@@ -16,6 +16,15 @@ static int simpleInstruction(const char* name, int offset) {
   return offset + 1;
 }
 
+static int constantInstruction(const char* name, Chunk* chunk, int offset) {
+  printf("%s '", name); 
+  uint8_t valIndex = chunk->code[offset + 1];
+  Value val = chunk->constants.data[valIndex];
+  printf("%g'\n", val);
+
+  return offset + 2;
+}
+
 int disassembleInstruction(Chunk* chunk, int offset) {
   printf("%04d ", offset);
   uint8_t instruction = chunk->code[offset];
@@ -23,6 +32,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
   switch(instruction) {
     case OP_RETURN:
       return simpleInstruction("OP_RETURN", offset);
+    case OP_CONSTANT:
+      return constantInstruction("OP_CONSTANT", chunk, offset);
     default:
       printf("%d Unknown operator\n", instruction);
       return offset + 1;
