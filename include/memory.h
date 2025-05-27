@@ -3,6 +3,10 @@
 
 #include <stdlib.h>
 
+/**
+ * macros for managing memory of dynamic arrays (e.g., Chunk, ValueArray)
+ */
+
 #define GROW_CAPACITY(capacity) \
   (capacity) == 0 ? 8 : (capacity) * 2
 
@@ -12,6 +16,10 @@
 #define FREE_ARRAY(type, pointer, oldCapacity) \
   (type*)reallocate(pointer, sizeof(type) * oldCapacity, 0)
 
+/**
+ * allocates memory on the heap for arrays
+ * will resize as needed
+ */
 void* reallocate(void* pointer, size_t oldCapacity, size_t newCapacity);
 
 #endif

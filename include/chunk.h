@@ -4,6 +4,10 @@
 #include <stdint.h>
 #include <value.h>
 
+/**
+ * represents a dynamic array of OpCodes (see enum in "common.h")
+ * the constants array is for literals in the source code
+ */
 typedef struct {
   int capacity;
   int count;
@@ -12,9 +16,26 @@ typedef struct {
   ValueArray constants;
 } Chunk;
 
+/**
+ * initialize an empty chunk
+ */
 void initChunk(Chunk* chunk);
+
+/**
+ * add a single op code (one byte long) to chunk
+ * also add line number
+ */
 void writeChunk(Chunk* chunk, uint8_t byte, int line);
+
+/**
+ * add a value to the constants array 
+ * returns the index where data is stored
+ */
 int addConstant(Chunk* chunk, Value val);
+
+/**
+ * free up dynamic arrays store on the heap
+ */
 void freeChunk(Chunk* chunk);
 
 #endif

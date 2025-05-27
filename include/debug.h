@@ -4,6 +4,9 @@
 #include <stdint.h>
 #include <chunk.h>
 
+/**
+ * functions for converting bytecode instructions into human-readable output
+ */
 void disassembleChunk(Chunk* chunk, const char* name);
 int disassembleInstruction(Chunk* chunk, int offset);
 
