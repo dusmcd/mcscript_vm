@@ -5,6 +5,19 @@
 #include <value.h>
 
 /**
+ * the set of all bytecode instructions
+ */
+typedef enum {
+  /**
+   * represents type Value
+   * will be followed with parameters that are the index into the ValueArray
+   */
+  OP_CONSTANT,
+  OP_RETURN // return instruction (i.e., pop function off stack and return to next instruction)
+} OpCode;
+
+
+/**
  * represents a dynamic array of OpCodes (see enum in "common.h")
  * the constants array is for literals in the source code
  */
