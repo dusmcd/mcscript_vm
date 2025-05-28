@@ -20,16 +20,27 @@ int main() {
   writeChunk(&chunk, OP_CONSTANT, 123);
   writeChunk(&chunk, constant, 123);
 
-  constant = addConstant(&chunk, 1000);
+  constant = addConstant(&chunk, 2.0);
 
   writeChunk(&chunk, OP_CONSTANT, 124);
   writeChunk(&chunk, constant, 124);
-  writeChunk(&chunk, OP_NEGATE, 124);
+  writeChunk(&chunk, OP_ADD, 124);
+
+  constant = addConstant(&chunk, 3);
+
+  writeChunk(&chunk, OP_CONSTANT, 124);
+  writeChunk(&chunk, constant, 124);
+
+  writeChunk(&chunk, OP_DIVIDE, 124);
   writeChunk(&chunk, OP_RETURN, 124);
 
   disassembleChunk(&chunk, "instructions");
   printf("\n");
-  interpret(vm);
+  if (interpret(vm) == RUNTIME_ERROR) {
+    printf("runtime error\n");
+    return 1;
+  }
+  
 
   freeChunk(&chunk);
   freeVM(vm);
