@@ -28,4 +28,6 @@ void writeValueArray(ValueArray* array, Value val);
  */
 void freeValueArray(ValueArray* array);
 
+void printValue(Value val);
+
 #endif

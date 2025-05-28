@@ -24,9 +24,12 @@ int main() {
 
   writeChunk(&chunk, OP_CONSTANT, 124);
   writeChunk(&chunk, constant, 124);
+  writeChunk(&chunk, OP_NEGATE, 124);
   writeChunk(&chunk, OP_RETURN, 124);
 
   disassembleChunk(&chunk, "instructions");
+  printf("\n");
+  interpret(vm);
 
   freeChunk(&chunk);
   freeVM(vm);

@@ -13,6 +13,7 @@ typedef enum {
    * will be followed with parameters that are the index into the ValueArray
    */
   OP_CONSTANT,
+  OP_NEGATE,
   OP_RETURN // return instruction (i.e., pop function off stack and return to next instruction)
 } OpCode;
 
