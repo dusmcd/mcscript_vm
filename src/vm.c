@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <debug.h>
+#include <compiler.h>
 
 VM* initVM(Chunk* chunk) {
   VM* vm = (VM*)malloc(sizeof(VM));
@@ -95,8 +96,10 @@ static InterpretResult run(VM* vm) {
 }
 
 
-InterpretResult interpret(VM* vm) {
+InterpretResult interpret(VM* vm, const char* source) {
   // setting instruction pointer to first instruction in chunk
+  Chunk* chunk = compile(source);
+  vm->chunk = chunk;
   vm->ip = vm->chunk->code;
   return run(vm);
 }
