@@ -1,20 +1,13 @@
 #include <scanner.h>
 #include <stdlib.h>
 
-Scanner* initScanner(const char* source) {
-  Scanner* scanner = (Scanner*)malloc(sizeof(Scanner));
-  if (scanner == NULL) {
-    return NULL;
-  }
+void initScanner(Scanner* scanner, const char* source) {
   scanner->start = source;
   scanner->current = source;
   scanner->line = 1;
-
-  return scanner;
 }
 
 void freeScanner(Scanner* scanner) {
-  free(scanner);
 }
 
 static char advance(Scanner* scanner) {

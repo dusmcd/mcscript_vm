@@ -3,17 +3,16 @@
 #include <chunk.h>
 #include <stdlib.h>
 
-Chunk* compile(const char* source) {
-  Scanner* scanner = initScanner(source);
+void compile(Chunk* chunk, const char* source) {
+  Scanner scanner;
+  initScanner(&scanner, source);
 
-  Token token = scanToken(scanner);
+  Token token = scanToken(&scanner);
   while (token.type != TOKEN_EOF) {
-    token = scanToken(scanner);
+    token = scanToken(&scanner);
   }
 
 
-  freeScanner(scanner);
-  Chunk* chunk = (Chunk*)malloc(sizeof(Chunk));
-  return chunk;
+  freeScanner(&scanner);
 }
 

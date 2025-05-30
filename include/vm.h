@@ -31,7 +31,7 @@ typedef enum {
   COMPILE_ERROR
 } InterpretResult;
 
-VM* initVM(Chunk* chunk);
+void initVM(VM* vm, Chunk* chunk);
 void freeVM(VM* vm);
 InterpretResult interpret(VM* vm, const char* source);
 void push(VM* vm, Value val);

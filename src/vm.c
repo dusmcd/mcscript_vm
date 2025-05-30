@@ -7,19 +7,12 @@
 #include <debug.h>
 #include <compiler.h>
 
-VM* initVM(Chunk* chunk) {
-  VM* vm = (VM*)malloc(sizeof(VM));
-  if (vm == NULL) {
-    return NULL;
-  }
-
+void initVM(VM* vm, Chunk* chunk) {
   vm->chunk = chunk;
   vm->stackTop = vm->valueStack;
-  return vm;
 }
 
 void freeVM(VM* vm) {
-  free(vm);
 }
 
 void push(VM* vm, Value val) {
@@ -98,8 +91,8 @@ static InterpretResult run(VM* vm) {
 
 InterpretResult interpret(VM* vm, const char* source) {
   // setting instruction pointer to first instruction in chunk
-  Chunk* chunk = compile(source);
-  vm->chunk = chunk;
+  compile(vm->chunk, source);
   vm->ip = vm->chunk->code;
-  return run(vm);
+  // return run(vm);
+  return INTERPRET_OK;
 }

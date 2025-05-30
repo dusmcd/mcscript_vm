@@ -3,6 +3,6 @@
 
 #include <chunk.h>
 
-Chunk* compile(const char* source);
+void compile(Chunk* chunk, const char* source);
 
 #endif
