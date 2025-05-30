@@ -12,7 +12,9 @@ int main() {
   VM vm;
   initVM(&vm, &chunk);
 
-  const char* source = "10 == 10; 10 != 11;";
+  const char* source = "10 == 10; 10 != 11;\n"
+                        "// I am a comment... ignore me\n"
+                        "5 > 3; 5 >= 2;";
   interpret(&vm, source);
   
   freeChunk(&chunk);

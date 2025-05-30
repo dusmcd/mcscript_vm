@@ -72,10 +72,27 @@ static Token number(Scanner* scanner) {
 }
 
 static void skipWhiteSpace(Scanner* scanner) {
-  while (peek(scanner) == ' ' ||
-      peek(scanner) == '\t' ||
-      peek(scanner) == '\r') {
-    advance(scanner);
+  while (true) {
+    switch(peek(scanner)) {
+      case ' ':
+      case '\t':
+      case '\r':
+        advance(scanner);
+        break;
+      case '\n':
+        // increment the line number when we see a line break
+        scanner->line++;
+        advance(scanner);
+        break;
+      case '/':
+        // comments start with '//' so we will advance until we reach a new line
+        if (peekNext(scanner) == '/') {
+          while(peek(scanner) != '\n') advance(scanner);
+        }
+        break;
+      default:
+        return;
+    }
   }
 }
 
