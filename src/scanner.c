@@ -1,6 +1,7 @@
 #include <scanner.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 
 void initScanner(Scanner* scanner, const char* source) {
   scanner->start = source;
@@ -96,12 +97,68 @@ static void skipWhiteSpace(Scanner* scanner) {
   }
 }
 
+static Token errorToken(Scanner* scanner, const char* message) {
+  Token token = {
+    .length = (int)(scanner->current - scanner->start),
+    .start = scanner->start,
+    .type = TOKEN_ILLEGAL,
+    .line = scanner->line
+  };
+
+  fprintf(stderr,"%s\n", message);
+
+  return token;
+}
+
+static Token string(Scanner* scanner) {
+  while (peek(scanner) != '"') {
+    if (isAtEnd(scanner)) {
+      return errorToken(scanner, "Unterminated string literal.");
+    }
+    advance(scanner);
+  }
+
+  // consume closing quotation
+  advance(scanner);
+
+  Token token = {
+    .length = (int)(scanner->current - scanner->start),
+    .line = scanner->line,
+    .start = scanner->start,
+    .type = TOKEN_STRING
+  };
+
+  return token;
+}
+
+static bool isAlpha(char c) {
+  return (c >= 'a' && c <= 'z') ||
+    (c >= 'A' && c <= 'Z') ||
+    c == '_';
+}
+
+static Token getIdentifier(Scanner* scanner) {
+  while(isAlpha(peek(scanner))) {
+    advance(scanner);
+  }
+
+  Token token = {
+    .length = (int)(scanner->current - scanner->start),
+    .line = scanner->line,
+    .type = TOKEN_IDENTIFIER,
+    .start = scanner->start
+  };
+
+  return token;
+}
+
 
 Token scanToken(Scanner* scanner) {
   skipWhiteSpace(scanner);
   scanner->start = scanner->current;
   char c = advance(scanner);
   if (isDigit(c)) return number(scanner);
+  if (isAlpha(c)) return getIdentifier(scanner);
 
   switch(c) {
     case '(': return makeToken(scanner, TOKEN_LEFT_PAREN);
@@ -113,6 +170,7 @@ Token scanToken(Scanner* scanner) {
     case '*': return makeToken(scanner, TOKEN_STAR);
     case ';': return makeToken(scanner, TOKEN_SEMICOLON);
     case '/': return makeToken(scanner, TOKEN_SLASH);
+    case '"': return string(scanner);
     case '!': 
       return match(scanner, '=') ? makeToken(scanner, TOKEN_BANG_EQUAL)
         : makeToken(scanner, TOKEN_BANG);
