@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
 
 void initScanner(Scanner* scanner, const char* source) {
   scanner->start = source;
@@ -137,6 +138,60 @@ static bool isAlpha(char c) {
     c == '_';
 }
 
+static TokenType getIdentifierType(Scanner* scanner, int length) {
+  switch(scanner->start[0]) {
+    case 'a': 
+      // looking for "and"
+      if (length == 3 &&
+          memcmp(scanner->start + 1, "nd", 2) == 0) {
+        return TOKEN_AND;
+      }
+      break;
+    case 'e':
+      if (length == 4 &&
+          memcmp(scanner->start + 1, "lse", 3) == 0) {
+        return TOKEN_ELSE;
+      }
+      break;
+    case 'f':
+      if (length == 3 &&
+          memcmp(scanner->start + 1, "or", 2) == 0) {
+        return TOKEN_FOR;
+      }
+      else if (length == 8 &&
+          memcmp(scanner->start + 1, "unction", 7) == 0) {
+        return TOKEN_FUNCTION;
+      }
+      break;
+    case 'o':
+      if (length == 2 &&
+          memcmp(scanner->start + 1, "r", 1) == 0) {
+        return TOKEN_OR;
+      }
+      break;
+    case 'p':
+      if (length == 5 &&
+          memcmp(scanner->start + 1, "rint", 4) == 0) {
+        return TOKEN_PRINT;
+      }
+      break;
+    case 'v':
+      if (length == 3 &&
+          memcmp(scanner->start + 1, "ar", 2) == 0) {
+        return TOKEN_VAR;
+      }
+      break;
+    case 'w':
+      if (length == 5 &&
+          memcmp(scanner->start + 1, "hile", 4) == 0) {
+        return TOKEN_WHILE;
+      }
+      break;
+    }
+
+  return TOKEN_IDENTIFIER;
+}
+
 static Token getIdentifier(Scanner* scanner) {
   while(isAlpha(peek(scanner))) {
     advance(scanner);
@@ -145,9 +200,10 @@ static Token getIdentifier(Scanner* scanner) {
   Token token = {
     .length = (int)(scanner->current - scanner->start),
     .line = scanner->line,
-    .type = TOKEN_IDENTIFIER,
     .start = scanner->start
   };
+
+  token.type = getIdentifierType(scanner, token.length);
 
   return token;
 }
@@ -170,6 +226,7 @@ Token scanToken(Scanner* scanner) {
     case '*': return makeToken(scanner, TOKEN_STAR);
     case ';': return makeToken(scanner, TOKEN_SEMICOLON);
     case '/': return makeToken(scanner, TOKEN_SLASH);
+    case ',': return makeToken(scanner, TOKEN_COMMA);
     case '"': return string(scanner);
     case '!': 
       return match(scanner, '=') ? makeToken(scanner, TOKEN_BANG_EQUAL)
@@ -184,7 +241,7 @@ Token scanToken(Scanner* scanner) {
       return match(scanner, '=') ? makeToken(scanner, TOKEN_EQUAL_EQUAL)
         : makeToken(scanner, TOKEN_EQUAL);
     case '\0': return makeToken(scanner, TOKEN_EOF);
-    default: return makeToken(scanner, TOKEN_ILLEGAL);
+    default: return errorToken(scanner, "Unexpected token.");
   }
 
 }
