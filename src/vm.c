@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <debug.h>
 #include <compiler.h>
+#include <parser.h>
 
 void initVM(VM* vm, Chunk* chunk) {
   vm->chunk = chunk;
@@ -90,9 +91,13 @@ static InterpretResult run(VM* vm) {
 
 
 InterpretResult interpret(VM* vm, const char* source) {
+  Parser parser;
+  Statements statements = parse(&parser, source);
+  compile(vm->chunk, statements);
+  freeStatements(&statements);
+
   // setting instruction pointer to first instruction in chunk
-  compile(vm->chunk, source);
   vm->ip = vm->chunk->code;
-  // return run(vm);
+  //return run(vm);
   return INTERPRET_OK;
 }
