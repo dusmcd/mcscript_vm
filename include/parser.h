@@ -18,7 +18,8 @@ typedef enum {
 } StatementType;
 
 typedef enum {
-  EXPR_NUMBER
+  EXPR_NUMBER,
+  EXPR_NULL
 } ExpressionType;
 
 typedef struct {
@@ -46,11 +47,23 @@ typedef struct {
   Expression expression;
 } ReturnStatement;
 
+typedef struct {
+  int length;
+  const char* start;
+} Identifier;
+
+typedef struct {
+  Token token;
+  Identifier name;
+  Expression value;
+} VarStatement;
+
 /**
  * all the structures for different statement types
  */
 typedef union {
   ReturnStatement returnStmt; // => STMT_RETURN
+  VarStatement varStmt; // => STMT_VAR
 } StatementData;
 
 /**

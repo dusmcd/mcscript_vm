@@ -1,3 +1,4 @@
+#include "scanner.h"
 #include <parser.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -13,23 +14,74 @@ static void initParser(Parser* parser, Scanner* scanner) {
   advance(parser, scanner);
 }
 
-static ReturnStatement parseReturnStatement(Parser* parser) {
+static bool expect(Parser* parser, Scanner* scanner, TokenType type) {
+  if (parser->current.type == type) {
+    advance(parser, scanner);
+    return true;
+  }
+
+  return false;
+}
+
+static Expression parseExpression(Parser* parser, Scanner* scanner) {
+  Expression expr;
+  expr.type = EXPR_NUMBER;
+  return expr;
+}
+
+static ReturnStatement parseReturnStatement(Parser* parser, Scanner* scanner) {
   ReturnStatement rs;
+  rs.token = parser->previous;
+  if (parser->current.type == TOKEN_SEMICOLON) {
+    return rs;
+  }
+
+  advance(parser, scanner);
+  rs.expression = parseExpression(parser, scanner);
   return rs;
 }
 
-static Statement parseStatement(Parser* parser) {
+static VarStatement parseVarStatement(Parser* parser, Scanner* scanner) {
+  VarStatement vs = {.token = parser->previous};
+
+  if (!expect(parser, scanner, TOKEN_IDENTIFIER)) {
+    // handle error
+  }
+
+  Identifier name = {.length = parser->previous.length, .start = parser->previous.start};
+  vs.name = name;
+
+  if (parser->current.type == TOKEN_EQUAL) {
+    // jump over equals sign
+    advance(parser, scanner);
+    advance(parser, scanner);
+    vs.value = parseExpression(parser, scanner);
+  } else {
+    vs.value = (Expression){.type = EXPR_NULL};
+  }
+
+  return vs;
+}
+
+static Statement parseStatement(Parser* parser, Scanner* scanner) {
   Statement stmt;
   switch(parser->previous.type) {
     case TOKEN_RETURN: {
-      ReturnStatement rs = parseReturnStatement(parser);
+      ReturnStatement rs = parseReturnStatement(parser, scanner);
       stmt.type = STMT_RETURN;
       stmt.data.returnStmt = rs;
-      return stmt;
     }
-    default:
-     return stmt;
+    case TOKEN_VAR: {
+      VarStatement vs = parseVarStatement(parser, scanner);
+      stmt.type = STMT_VAR;
+      stmt.data.varStmt = vs;
+    }
+    default: {
+     // do nothing
+    }
   }
+
+  return stmt;
 }
 
 static void append(Statements* statements, Statement stmt) {
@@ -55,7 +107,7 @@ Statements parse(Parser* parser, const char* source) {
         parser->previous.line, parser->previous.type,
         parser->previous.length, parser->previous.start);
 
-    Statement stmt = parseStatement(parser);
+    Statement stmt = parseStatement(parser, &scanner);
     append(&statements, stmt);    
 
     if (parser->current.type == TOKEN_EOF) {
