@@ -1,7 +1,30 @@
 #include <parser_test.h>
 #include <parser.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+
+static bool testNumber(Statement statement, double expected) {
+  if (statement.type != STMT_EXPR) {
+    fprintf(stderr, "statement is not STMT_EXPR\n");
+    return false;
+  }
+
+  Expression expr = statement.data.expressionStmt.expression;
+  if (expr.type != EXPR_NUMBER) {
+    fprintf(stderr, "expression is not EXPR_NUMBER\n");
+    return false;
+  }
+
+  if (expr.data.number.value != expected) {
+    fprintf(stderr, "wrong value. expected=%f got=%f\n",
+        expected, expr.data.number.value);
+    return false;
+  }
+
+  return true;
+}
 
 static void testReturnStmt() {
   Parser parser;
@@ -43,9 +66,18 @@ static void testNumberExpression() {
     }
 
     Statement statement = stmts.stmts[0];
+    double expected = strtod(tests.tests[i], NULL);
+    if (!testNumber(statement, expected)) {
+      return;
+    }
   }
+
+  printf("testNumberExpression() passed\n");
 }
 
 void testParser() {
+  printf("=== Parser Tests ===\n");
   testReturnStmt();
+  testNumberExpression();
+  printf("\n");
 }

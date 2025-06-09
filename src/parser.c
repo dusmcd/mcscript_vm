@@ -92,6 +92,12 @@ static VarStatement parseVarStatement(Parser* parser, Scanner* scanner) {
   return vs;
 }
 
+static ExpressionStatement parseExpressionStatement(Parser* parser, Scanner* scanner) {
+  ExpressionStatement es = {.token = parser->previous};
+  es.expression = parseExpression(parser, scanner, PREC_NONE);
+  return es;
+}
+
 static Statement parseStatement(Parser* parser, Scanner* scanner) {
   Statement stmt;
   switch(parser->previous.type) {
@@ -107,8 +113,14 @@ static Statement parseStatement(Parser* parser, Scanner* scanner) {
       stmt.data.varStmt = vs;
       break;
     }
-    default: {
+    case TOKEN_SEMICOLON:
       stmt.type = STMT_NULL;
+      break;
+    default: {
+      ExpressionStatement es = parseExpressionStatement(parser, scanner);
+      stmt.type = STMT_EXPR;
+      stmt.data.expressionStmt = es;
+      break;
     }
   }
 

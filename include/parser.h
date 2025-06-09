@@ -28,6 +28,7 @@ typedef struct {
 typedef enum {
   STMT_RETURN,
   STMT_VAR,
+  STMT_EXPR,
   STMT_NULL
 } StatementType;
 
@@ -81,12 +82,18 @@ typedef struct {
   Expression value;
 } VarStatement;
 
+typedef struct {
+  Token token;
+  Expression expression;
+} ExpressionStatement;
+
 /**
  * all the structures for different statement types
  */
 typedef union {
   ReturnStatement returnStmt; // => STMT_RETURN
   VarStatement varStmt; // => STMT_VAR
+  ExpressionStatement expressionStmt; // => STMT_EXPR
 } StatementData;
 
 /**
