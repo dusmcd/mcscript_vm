@@ -3,6 +3,19 @@
 
 #include <scanner.h>
 
+/**
+ * precedence hierarchy for different operators
+ */
+typedef enum {
+  PREC_NONE,
+  PREC_ASSIGN,
+  PREC_TERM,
+  PREC_FACTOR,
+  PREC_UNARY,
+  PREC_CALL
+} Precedence;
+
+
 
 /**
  * holds the state of the tokens being analyzed
@@ -41,6 +54,15 @@ typedef struct {
   ExpressionType type;
   ExpressionData data;
 } Expression;
+
+typedef Expression(*PrefixFn)(Parser*, Scanner*);
+typedef Expression(*InfixFn)(Parser*, Scanner*, Expression);
+
+typedef struct {
+  PrefixFn prefix;
+  InfixFn infix;
+  Precedence precedence;
+} ParserRule;
 
 typedef struct {
   Token token;

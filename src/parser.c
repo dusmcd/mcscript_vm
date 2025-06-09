@@ -4,6 +4,31 @@
 #include <stdio.h>
 #include <memory.h>
 
+static Expression number(Parser*, Scanner*);
+
+const ParserRule rules[] = {
+  [TOKEN_NUMBER] = {number, NULL, PREC_NONE}
+};
+
+static ParserRule getRule(TokenType type) {
+  return rules[type];
+}
+
+static Expression number(Parser* parser, Scanner* scanner) {
+  Number number = {.token = parser->previous};
+
+  char* buff = (char*)malloc(number.token.length + 1);
+  snprintf(buff, sizeof(buff), "%.*s", number.token.length, number.token.start);
+  buff[number.token.length] = '\0';
+  double value = strtod(buff, NULL);
+  number.value = value;
+
+  Expression expr = {.type = EXPR_NUMBER};
+  expr.data.number = number;
+
+  return expr;
+}
+
 static void advance(Parser* parser, Scanner* scanner) {
   parser->previous = parser->current;
   parser->current = scanToken(scanner);
@@ -23,10 +48,14 @@ static bool expect(Parser* parser, Scanner* scanner, TokenType type) {
   return false;
 }
 
-static Expression parseExpression(Parser* parser, Scanner* scanner) {
-  Expression expr;
-  expr.type = EXPR_NUMBER;
-  return expr;
+static Expression parseExpression(Parser* parser, Scanner* scanner, Precedence prec) {
+  ParserRule rule = getRule(parser->previous.type);
+  PrefixFn prefixFn = rule.prefix;
+  if (prefixFn == NULL) {
+    // handle error
+  }
+
+  return prefixFn(parser, scanner);
 }
 
 static ReturnStatement parseReturnStatement(Parser* parser, Scanner* scanner) {
@@ -37,7 +66,7 @@ static ReturnStatement parseReturnStatement(Parser* parser, Scanner* scanner) {
   }
 
   advance(parser, scanner);
-  rs.expression = parseExpression(parser, scanner);
+  rs.expression = parseExpression(parser, scanner, getRule(parser->previous.type).precedence);
   return rs;
 }
 
@@ -55,7 +84,7 @@ static VarStatement parseVarStatement(Parser* parser, Scanner* scanner) {
     // jump over equals sign
     advance(parser, scanner);
     advance(parser, scanner);
-    vs.value = parseExpression(parser, scanner);
+    vs.value = parseExpression(parser, scanner, getRule(parser->previous.type).precedence);
   } else {
     vs.value = (Expression){.type = EXPR_NULL};
   }
