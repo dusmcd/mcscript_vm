@@ -62,6 +62,8 @@ static ReturnStatement parseReturnStatement(Parser* parser, Scanner* scanner) {
   ReturnStatement rs;
   rs.token = parser->previous;
   if (parser->current.type == TOKEN_SEMICOLON) {
+    Expression expr = {.type = EXPR_NULL};
+    rs.expression = expr;
     return rs;
   }
 
