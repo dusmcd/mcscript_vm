@@ -27,7 +27,8 @@ typedef struct {
 
 typedef enum {
   STMT_RETURN,
-  STMT_VAR
+  STMT_VAR,
+  STMT_NULL
 } StatementType;
 
 typedef enum {

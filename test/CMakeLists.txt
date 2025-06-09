@@ -19,3 +19,5 @@ file(GLOB_RECURSE SOURCES
 list(REMOVE_ITEM SOURCES "${CMAKE_SOURCE_DIR}/../src/main.c")
 
 add_executable(test ${SOURCES})
+
+target_compile_options(test PRIVATE -g)

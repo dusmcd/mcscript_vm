@@ -99,14 +99,16 @@ static Statement parseStatement(Parser* parser, Scanner* scanner) {
       ReturnStatement rs = parseReturnStatement(parser, scanner);
       stmt.type = STMT_RETURN;
       stmt.data.returnStmt = rs;
+      break;
     }
     case TOKEN_VAR: {
       VarStatement vs = parseVarStatement(parser, scanner);
       stmt.type = STMT_VAR;
       stmt.data.varStmt = vs;
+      break;
     }
     default: {
-     // do nothing
+      stmt.type = STMT_NULL;
     }
   }
 
@@ -114,9 +116,14 @@ static Statement parseStatement(Parser* parser, Scanner* scanner) {
 }
 
 static void append(Statements* statements, Statement stmt) {
-  int oldCapacity = statements->capacity;
-  statements->capacity = GROW_CAPACITY(statements->capacity);
-  statements->stmts = GROW_ARRAY(Statement, statements->stmts, oldCapacity, statements->capacity);
+  if (statements->capacity < statements->count + 1) {
+    int oldCapacity = statements->capacity;
+    statements->capacity = GROW_CAPACITY(statements->capacity);
+    statements->stmts = GROW_ARRAY(Statement, statements->stmts, oldCapacity, statements->capacity);
+  }
+
+  statements->stmts[statements->count] = stmt;
+  statements->count++;
 }
 
 
@@ -132,12 +139,10 @@ Statements parse(Parser* parser, const char* source) {
   };
 
   while (true) {
-    printf("[line: %d]{ type: %d, literal: %.*s }\n", 
-        parser->previous.line, parser->previous.type,
-        parser->previous.length, parser->previous.start);
-
     Statement stmt = parseStatement(parser, &scanner);
-    append(&statements, stmt);    
+    if (stmt.type != STMT_NULL) {
+      append(&statements, stmt);    
+    }
 
     if (parser->current.type == TOKEN_EOF) {
       break;
