@@ -91,7 +91,7 @@ static void skipWhiteSpace(Scanner* scanner) {
         if (peekNext(scanner) == '/') {
           while(peek(scanner) != '\n') advance(scanner);
         }
-        break;
+        return;
       default:
         return;
     }

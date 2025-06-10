@@ -64,6 +64,63 @@ static void testPrefixExpression() {
   printf("testPrefixExpression() passed\n");
 }
 
+static void testInfixExpression() {
+  Parser parser;
+  Test tests = {
+    .count = 4,
+    .tests = {"1 + 1;", "2 * 2;", "3 / 3;", "4 - 4;"},
+    .expectedNums = {1, 2, 3, 4},
+    .expectedOp = {TOKEN_PLUS, TOKEN_STAR, TOKEN_SLASH, TOKEN_MINUS}
+  };
+
+  for (int i = 0; i < tests.count; i++) {
+    const char* source = tests.tests[i];
+    Statements stmts = parse(&parser, source);
+
+    if (stmts.count != 1) {
+      fprintf(stderr, "stmts does not contain 1 statement got=%d\n",
+          stmts.count);
+      return;
+    }
+
+    Statement statement = stmts.stmts[0];
+    if (statement.type != STMT_EXPR) {
+      fprintf(stderr, "statement is not STMT_EXPR\n");
+      return;
+    }
+
+    Expression expr = statement.data.expressionStmt.expression;
+    if (expr.type != EXPR_INFIX) {
+      fprintf(stderr, "expression is not EXPR_INFIX\n");
+      return;
+    }
+
+    Infix infix = expr.data.infix;
+    Expression* left = infix.left;
+    Expression* right = infix.right;
+    TokenType operator = infix.operator;
+
+    double expected = tests.expectedNums[i];
+
+    if (!testNumber(*left, expected)) {
+      return;
+    }
+
+    if (!testNumber(*right, expected)) {
+      return;
+    }
+
+    if (infix.operator != tests.expectedOp[i]) {
+      fprintf(stderr, "wrong operator\n");
+      return;
+    }
+
+    freeInfix(&infix);
+  }
+
+  printf("testInfixExpression() passed\n");
+}
+
 static void testReturnStmt() {
   Parser parser;
   
@@ -169,5 +226,6 @@ void testParser() {
   testVarStmt();
   testNumberExpression();
   testPrefixExpression();
+  testInfixExpression();
   printf("\n");
 }
