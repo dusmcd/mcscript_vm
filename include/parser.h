@@ -3,6 +3,8 @@
 
 #include <scanner.h>
 
+typedef struct expression Expression;
+
 /**
  * precedence hierarchy for different operators
  */
@@ -34,6 +36,7 @@ typedef enum {
 
 typedef enum {
   EXPR_NUMBER,
+  EXPR_PREFIX,
   EXPR_NULL
 } ExpressionType;
 
@@ -43,19 +46,30 @@ typedef struct {
 } Number;
 
 /**
+ * e.g., -6, !10
+ */
+typedef struct {
+  Token token;
+  TokenType operator;
+  Expression* expression;
+} Prefix;
+
+
+/**
  * all the structures for different expression types
  */
 typedef union {
   Number number; // => EXPR_NUMBER
+  Prefix prefix; // => EXPR_PREFIX
 } ExpressionData;
 
 /**
  * a generic container for all expressions
  */
-typedef struct {
+struct expression{
   ExpressionType type;
   ExpressionData data;
-} Expression;
+};
 
 typedef Expression(*PrefixFn)(Parser*, Scanner*);
 typedef Expression(*InfixFn)(Parser*, Scanner*, Expression);
@@ -115,5 +129,6 @@ typedef struct {
 
 Statements parse(Parser* parser, const char* source);
 void freeStatements(Statements* statements);
+void freePrefix(Prefix* prefix);
 
 #endif

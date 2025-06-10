@@ -1,3 +1,4 @@
+#include <scanner.h>
 #include <parser_test.h>
 #include <parser.h>
 #include <stdio.h>
@@ -18,6 +19,49 @@ static bool testNumber(Expression expr, double expected) {
   }
 
   return true;
+}
+
+static void testPrefixExpression() {
+  Parser parser;
+
+  Test tests = {.count = 3, .tests = {"!5", "!10", "-1000"}, .expectedNums = {5, 10, 1000}};
+  for (int i = 0; i < tests.count; i++) {
+    const char* source = tests.tests[i];
+
+    Statements stmts = parse(&parser, source);
+    if (stmts.count != 1) {
+      fprintf(stderr, "stmts does not contain 1 statement. got=%d\n",
+          stmts.count);
+      return;
+    }
+
+    Statement statement = stmts.stmts[0];
+    if (statement.type != STMT_EXPR) {
+      fprintf(stderr, "statement is not STMT_EXPR\n");
+      return;
+    }
+
+    TokenType expectedOp = source[0] == '!' ? TOKEN_BANG : TOKEN_MINUS;
+    Expression expr = statement.data.expressionStmt.expression;
+    Expression* prefixExp = expr.data.prefix.expression;
+
+    if (expr.type != EXPR_PREFIX) {
+      fprintf(stderr, "expression is not EXPR_PREFIX\n");
+      return;
+    }
+
+    if (expr.data.prefix.operator != expectedOp) {
+      fprintf(stderr, "wrong prefix operator\n");
+      return;
+    }
+
+    if (!testNumber(*prefixExp, tests.expectedNums[i])) {
+      return;
+    }
+    freePrefix(&expr.data.prefix);
+  }
+
+  printf("testPrefixExpression() passed\n");
 }
 
 static void testReturnStmt() {
@@ -124,5 +168,6 @@ void testParser() {
   testReturnStmt();
   testVarStmt();
   testNumberExpression();
+  testPrefixExpression();
   printf("\n");
 }

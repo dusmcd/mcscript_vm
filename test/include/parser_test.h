@@ -6,6 +6,7 @@
 typedef struct {
   int count;
   const char* tests[NUM_TESTS];
+  int expectedNums[NUM_TESTS];
 } Test;
 
 void testParser();

@@ -1,17 +1,42 @@
-#include "scanner.h"
+#include <scanner.h>
 #include <parser.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <memory.h>
 
 static Expression number(Parser*, Scanner*);
+static Expression unary(Parser*, Scanner*);
+static Expression parseExpression(Parser*, Scanner*, Precedence);
+
+static void advance(Parser* parser, Scanner* scanner) {
+  parser->previous = parser->current;
+  parser->current = scanToken(scanner);
+}
+
 
 const ParserRule rules[] = {
-  [TOKEN_NUMBER] = {number, NULL, PREC_NONE}
+  [TOKEN_NUMBER] = {number, NULL, PREC_NONE},
+  [TOKEN_MINUS] = {unary, NULL, PREC_UNARY},
+  [TOKEN_BANG] = {unary, NULL, PREC_UNARY}
 };
 
 static ParserRule getRule(TokenType type) {
   return rules[type];
+}
+
+static Expression unary(Parser* parser, Scanner* scanner) {
+  Prefix prefix = {.token = parser->previous, .operator = parser->previous.type};
+  advance(parser, scanner);
+
+  Expression* prefixExpr = (Expression*)malloc(sizeof(Expression));
+  *prefixExpr = parseExpression(parser, scanner, PREC_UNARY);
+
+  prefix.expression = prefixExpr;
+
+  Expression expr = {.type = EXPR_PREFIX};
+  expr.data.prefix = prefix;
+
+  return expr;
 }
 
 static Expression number(Parser* parser, Scanner* scanner) {
@@ -27,11 +52,6 @@ static Expression number(Parser* parser, Scanner* scanner) {
   expr.data.number = number;
 
   return expr;
-}
-
-static void advance(Parser* parser, Scanner* scanner) {
-  parser->previous = parser->current;
-  parser->current = scanToken(scanner);
 }
 
 static void initParser(Parser* parser, Scanner* scanner) {
@@ -179,4 +199,12 @@ void freeStatements(Statements* statements) {
   statements->stmts = NULL;
   statements->capacity = 0;
   statements->count = 0;
+}
+
+void freePrefix(Prefix* prefix) {
+  if (prefix->expression != NULL) {
+    free(prefix->expression);
+  }
+
+  prefix->expression = NULL;
 }
