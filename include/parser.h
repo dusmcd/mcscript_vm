@@ -37,6 +37,7 @@ typedef enum {
 typedef enum {
   EXPR_NUMBER,
   EXPR_PREFIX,
+  EXPR_INFIX,
   EXPR_NULL
 } ExpressionType;
 
@@ -54,6 +55,16 @@ typedef struct {
   Expression* expression;
 } Prefix;
 
+/**
+ * e.g., 5 + 10, 6 * 2, etc.
+ */
+typedef struct {
+  Token token;
+  Expression* left;
+  TokenType operator;
+  Expression* right;
+} Infix;
+
 
 /**
  * all the structures for different expression types
@@ -61,6 +72,7 @@ typedef struct {
 typedef union {
   Number number; // => EXPR_NUMBER
   Prefix prefix; // => EXPR_PREFIX
+  Infix infix; // => EXPR_INFIX
 } ExpressionData;
 
 /**
@@ -130,5 +142,6 @@ typedef struct {
 Statements parse(Parser* parser, const char* source);
 void freeStatements(Statements* statements);
 void freePrefix(Prefix* prefix);
+void freeInfix(Infix* infix);
 
 #endif

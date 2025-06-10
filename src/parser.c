@@ -6,6 +6,7 @@
 
 static Expression number(Parser*, Scanner*);
 static Expression unary(Parser*, Scanner*);
+static Expression binary(Parser*, Scanner*, Expression);
 static Expression parseExpression(Parser*, Scanner*, Precedence);
 
 static void advance(Parser* parser, Scanner* scanner) {
@@ -16,12 +17,34 @@ static void advance(Parser* parser, Scanner* scanner) {
 
 const ParserRule rules[] = {
   [TOKEN_NUMBER] = {number, NULL, PREC_NONE},
-  [TOKEN_MINUS] = {unary, NULL, PREC_UNARY},
+  [TOKEN_MINUS] = {unary, binary, PREC_TERM},
+  [TOKEN_PLUS] = {NULL, binary, PREC_TERM},
+  [TOKEN_STAR] = {NULL, binary, PREC_FACTOR},
+  [TOKEN_SLASH] = {NULL, binary, PREC_FACTOR},
   [TOKEN_BANG] = {unary, NULL, PREC_UNARY}
 };
 
 static ParserRule getRule(TokenType type) {
   return rules[type];
+}
+
+static Expression binary(Parser* parser, Scanner* scanner, Expression left) {
+  Infix infix = {.token = parser->previous, .operator = parser->previous.type};
+  Expression* leftP = (Expression*)malloc(sizeof(Expression));
+  *leftP = left;
+  infix.left = leftP;
+
+  advance(parser, scanner);
+
+  Expression right = parseExpression(parser, scanner, getRule(parser->previous.type).precedence);
+  Expression* rightP = (Expression*)malloc(sizeof(Expression));
+  *rightP = right;
+  infix.right = rightP;
+
+  Expression expr = {.type = EXPR_INFIX};
+  expr.data.infix = infix;
+
+  return expr;
 }
 
 static Expression unary(Parser* parser, Scanner* scanner) {
@@ -68,6 +91,10 @@ static bool expect(Parser* parser, Scanner* scanner, TokenType type) {
   return false;
 }
 
+static Precedence peekPrecedence(TokenType type) {
+  return getRule(type).precedence;
+}
+
 static Expression parseExpression(Parser* parser, Scanner* scanner, Precedence prec) {
   ParserRule rule = getRule(parser->previous.type);
   PrefixFn prefixFn = rule.prefix;
@@ -75,7 +102,18 @@ static Expression parseExpression(Parser* parser, Scanner* scanner, Precedence p
     // handle error
   }
 
-  return prefixFn(parser, scanner);
+  Expression expr = prefixFn(parser, scanner);
+
+  while (prec < peekPrecedence(parser->current.type) && parser->current.type != TOKEN_EOF) {
+    ParserRule infixRule = getRule(parser->current.type);
+    InfixFn infixFn = infixRule.infix;
+
+    advance(parser, scanner);
+
+    expr = infixFn(parser, scanner, expr);
+  }
+
+  return expr;
 }
 
 static ReturnStatement parseReturnStatement(Parser* parser, Scanner* scanner) {
@@ -207,4 +245,16 @@ void freePrefix(Prefix* prefix) {
   }
 
   prefix->expression = NULL;
+}
+
+void freeInfix(Infix* infix) {
+  if (infix->left != NULL) {
+    free(infix->left);
+    infix->left = NULL;
+  }
+
+  if (infix->right != NULL) {
+    free(infix->right);
+    infix->right = NULL;
+  }
 }

@@ -43,7 +43,7 @@ static void testPrefixExpression() {
 
     TokenType expectedOp = source[0] == '!' ? TOKEN_BANG : TOKEN_MINUS;
     Expression expr = statement.data.expressionStmt.expression;
-    Expression* prefixExp = expr.data.prefix.expression;
+    Expression* innerExp = expr.data.prefix.expression;
 
     if (expr.type != EXPR_PREFIX) {
       fprintf(stderr, "expression is not EXPR_PREFIX\n");
@@ -55,7 +55,7 @@ static void testPrefixExpression() {
       return;
     }
 
-    if (!testNumber(*prefixExp, tests.expectedNums[i])) {
+    if (!testNumber(*innerExp, tests.expectedNums[i])) {
       return;
     }
     freePrefix(&expr.data.prefix);
