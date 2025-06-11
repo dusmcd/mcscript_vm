@@ -290,3 +290,24 @@ void freeGrouped(Group* group) {
     group->expr = NULL;
   }
 }
+
+void freeExpression(Expression* expr) {
+  switch(expr->type) {
+    case EXPR_PREFIX:
+      freeExpression(expr->data.prefix.expression);
+      freePrefix(&expr->data.prefix);
+      break;
+    case EXPR_INFIX:
+      freeExpression(expr->data.infix.left);
+      freeExpression(expr->data.infix.right);
+      freeInfix(&expr->data.infix);
+      break;
+    case EXPR_GROUP:
+      freeExpression(expr->data.group.expr);
+      freeGrouped(&expr->data.group);
+      break;
+    case EXPR_NUMBER:
+    case EXPR_NULL:
+      return;
+  }
+}

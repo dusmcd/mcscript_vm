@@ -47,18 +47,21 @@ static void testPrefixExpression() {
 
     if (expr.type != EXPR_PREFIX) {
       fprintf(stderr, "expression is not EXPR_PREFIX\n");
+      freeExpression(&expr);
       return;
     }
 
     if (expr.data.prefix.operator != expectedOp) {
       fprintf(stderr, "wrong prefix operator\n");
+      freeExpression(&expr);
       return;
     }
 
     if (!testNumber(*innerExp, tests.expectedNums[i])) {
+      freeExpression(&expr);
       return;
     }
-    freePrefix(&expr.data.prefix);
+    freeExpression(&expr);
     freeStatements(&stmts);
   }
 
@@ -119,10 +122,11 @@ static void testInfixExpressions() {
 
     Expression expr = statement.data.expressionStmt.expression;
     if (!testInfixExpression(&expr, tests.expectedNums[i], tests.expectedNums[i], tests.expectedOp[i])) {
+      freeExpression(&expr);
       return;
     }
     
-    freeInfix(&expr.data.infix);
+    freeExpression(&expr);
     freeStatements(&stmts);
   }
 
@@ -153,37 +157,42 @@ static void testGroupExpression() {
     Expression expr = statement.data.expressionStmt.expression;
     if (expr.type != EXPR_INFIX) {
       fprintf(stderr, "top expression is not EXPR_INFIX\n");
+      freeExpression(&expr);
       return;
     }
 
     Expression* left = expr.data.infix.left;
     if (left->type != EXPR_GROUP) {
       fprintf(stderr, "left expression is not EXPR_GROUP\n");
+      freeExpression(&expr);
       return;
     }
 
     Expression* innerGroupExpr = left->data.group.expr;
     if (innerGroupExpr->type != EXPR_INFIX) {
       fprintf(stderr, "innerGroupExp is not EXPR_INFIX\n");
+      freeExpression(&expr);
       return;
     }
 
     if (!testInfixExpression(innerGroupExpr, 1, 2, TOKEN_PLUS)) {
+      freeExpression(&expr);
       return;
     }
 
     Expression* right = expr.data.infix.right;
     if (right->type != EXPR_NUMBER) {
       fprintf(stderr, "right expression is not EXPR_NUMBER\n");
+      freeExpression(&expr);
       return;
     }
 
     if (!testNumber(*right, 3)) {
+      freeExpression(&expr);
       return;
     }
-    freeInfix(&innerGroupExpr->data.infix);
-    freeGrouped(&left->data.group);
-    freeInfix(&expr.data.infix);
+
+    freeExpression(&expr);
     freeStatements(&stmts);
   }
 
