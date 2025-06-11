@@ -59,12 +59,40 @@ static void testPrefixExpression() {
       return;
     }
     freePrefix(&expr.data.prefix);
+    freeStatements(&stmts);
   }
 
   printf("testPrefixExpression() passed\n");
 }
 
-static void testInfixExpression() {
+static bool testInfixExpression(const Expression* expr, double left, double right, TokenType op) {
+    if (expr->type != EXPR_INFIX) {
+      fprintf(stderr, "expr->ssion is not EXPR_INFIX\n");
+      return false;
+    }
+
+    Infix infix = expr->data.infix;
+    Expression* leftExpr = infix.left;
+    Expression* rightExpr = infix.right;
+    TokenType operator = infix.operator;
+
+    if (!testNumber(*leftExpr, left)) {
+      return false;
+    }
+
+    if (!testNumber(*rightExpr, right)) {
+      return false;
+    }
+
+    if (infix.operator != op) {
+      fprintf(stderr, "wrong operator\n");
+      return false;
+    }
+
+  return true;
+}
+
+static void testInfixExpressions() {
   Parser parser;
   Test tests = {
     .count = 4,
@@ -90,35 +118,76 @@ static void testInfixExpression() {
     }
 
     Expression expr = statement.data.expressionStmt.expression;
-    if (expr.type != EXPR_INFIX) {
-      fprintf(stderr, "expression is not EXPR_INFIX\n");
+    if (!testInfixExpression(&expr, tests.expectedNums[i], tests.expectedNums[i], tests.expectedOp[i])) {
       return;
     }
-
-    Infix infix = expr.data.infix;
-    Expression* left = infix.left;
-    Expression* right = infix.right;
-    TokenType operator = infix.operator;
-
-    double expected = tests.expectedNums[i];
-
-    if (!testNumber(*left, expected)) {
-      return;
-    }
-
-    if (!testNumber(*right, expected)) {
-      return;
-    }
-
-    if (infix.operator != tests.expectedOp[i]) {
-      fprintf(stderr, "wrong operator\n");
-      return;
-    }
-
-    freeInfix(&infix);
+    
+    freeInfix(&expr.data.infix);
+    freeStatements(&stmts);
   }
 
   printf("testInfixExpression() passed\n");
+}
+
+static void testGroupExpression() {
+  Parser parser;
+  Test tests = {.count = 1, .tests = "(1 + 2) * 3;"};
+
+  for (int i = 0; i < tests.count; i++) {
+    const char* source = tests.tests[i];
+    Statements stmts = parse(&parser, source);
+
+    if (stmts.count != 1) {
+      fprintf(stderr, "stmts does not contain 1 statement got=%d\n",
+          stmts.count);
+      return;
+    }
+
+    Statement statement = stmts.stmts[0];
+
+    if (statement.type != STMT_EXPR) {
+      fprintf(stderr, "statement is not STMT_EXPR\n");
+      return;
+    }
+
+    Expression expr = statement.data.expressionStmt.expression;
+    if (expr.type != EXPR_INFIX) {
+      fprintf(stderr, "top expression is not EXPR_INFIX\n");
+      return;
+    }
+
+    Expression* left = expr.data.infix.left;
+    if (left->type != EXPR_GROUP) {
+      fprintf(stderr, "left expression is not EXPR_GROUP\n");
+      return;
+    }
+
+    Expression* innerGroupExpr = left->data.group.expr;
+    if (innerGroupExpr->type != EXPR_INFIX) {
+      fprintf(stderr, "innerGroupExp is not EXPR_INFIX\n");
+      return;
+    }
+
+    if (!testInfixExpression(innerGroupExpr, 1, 2, TOKEN_PLUS)) {
+      return;
+    }
+
+    Expression* right = expr.data.infix.right;
+    if (right->type != EXPR_NUMBER) {
+      fprintf(stderr, "right expression is not EXPR_NUMBER\n");
+      return;
+    }
+
+    if (!testNumber(*right, 3)) {
+      return;
+    }
+    freeInfix(&innerGroupExpr->data.infix);
+    freeGrouped(&left->data.group);
+    freeInfix(&expr.data.infix);
+    freeStatements(&stmts);
+  }
+
+  printf("testGroupExpression() passed\n");
 }
 
 static void testReturnStmt() {
@@ -226,6 +295,7 @@ void testParser() {
   testVarStmt();
   testNumberExpression();
   testPrefixExpression();
-  testInfixExpression();
+  testInfixExpressions();
+  testGroupExpression();
   printf("\n");
 }

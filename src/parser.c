@@ -8,6 +8,8 @@ static Expression number(Parser*, Scanner*);
 static Expression unary(Parser*, Scanner*);
 static Expression binary(Parser*, Scanner*, Expression);
 static Expression parseExpression(Parser*, Scanner*, Precedence);
+static Expression grouped(Parser*, Scanner*);
+static bool expect(Parser*, Scanner*, TokenType);
 
 static void advance(Parser* parser, Scanner* scanner) {
   parser->previous = parser->current;
@@ -21,11 +23,34 @@ const ParserRule rules[] = {
   [TOKEN_PLUS] = {NULL, binary, PREC_TERM},
   [TOKEN_STAR] = {NULL, binary, PREC_FACTOR},
   [TOKEN_SLASH] = {NULL, binary, PREC_FACTOR},
-  [TOKEN_BANG] = {unary, NULL, PREC_UNARY}
+  [TOKEN_BANG] = {unary, NULL, PREC_UNARY},
+  [TOKEN_LEFT_PAREN] = {grouped, NULL, PREC_NONE},
+  [TOKEN_RIGHT_PAREN] = {NULL, NULL, PREC_NONE}
 };
 
 static ParserRule getRule(TokenType type) {
   return rules[type];
+}
+
+static Expression grouped(Parser* parser, Scanner* scanner) {
+  Group group = {.token = parser->previous};
+
+  advance(parser, scanner);
+  Expression innerExpr = parseExpression(parser, scanner, getRule(parser->previous.type).precedence);
+  Expression* innerExprP = (Expression*)malloc(sizeof(Expression));
+  *innerExprP = innerExpr;
+
+  group.expr = innerExprP;
+
+  // jump over right paren
+  if (!expect(parser, scanner, TOKEN_RIGHT_PAREN)) {
+    // handle error
+  }
+  
+  Expression expr = {.type = EXPR_GROUP};
+  expr.data.group = group;
+
+  return expr;
 }
 
 static Expression binary(Parser* parser, Scanner* scanner, Expression left) {
@@ -256,5 +281,12 @@ void freeInfix(Infix* infix) {
   if (infix->right != NULL) {
     free(infix->right);
     infix->right = NULL;
+  }
+}
+
+void freeGrouped(Group* group) {
+  if (group->expr != NULL) {
+    free(group->expr);
+    group->expr = NULL;
   }
 }

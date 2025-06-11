@@ -14,6 +14,7 @@ typedef enum {
   PREC_TERM,
   PREC_FACTOR,
   PREC_UNARY,
+  PREC_GROUP,
   PREC_CALL
 } Precedence;
 
@@ -38,6 +39,7 @@ typedef enum {
   EXPR_NUMBER,
   EXPR_PREFIX,
   EXPR_INFIX,
+  EXPR_GROUP,
   EXPR_NULL
 } ExpressionType;
 
@@ -65,6 +67,11 @@ typedef struct {
   Expression* right;
 } Infix;
 
+typedef struct {
+  Token token;
+  Expression* expr;
+} Group;
+
 
 /**
  * all the structures for different expression types
@@ -73,6 +80,7 @@ typedef union {
   Number number; // => EXPR_NUMBER
   Prefix prefix; // => EXPR_PREFIX
   Infix infix; // => EXPR_INFIX
+  Group group; // => EXPR_GROUP
 } ExpressionData;
 
 /**
@@ -143,5 +151,6 @@ Statements parse(Parser* parser, const char* source);
 void freeStatements(Statements* statements);
 void freePrefix(Prefix* prefix);
 void freeInfix(Infix* infix);
+void freeGrouped(Group* group);
 
 #endif
