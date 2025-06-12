@@ -318,8 +318,7 @@ void freeExpression(Expression* expr) {
       freeExpression(expr->data.group.expr);
       freeGrouped(&expr->data.group);
       break;
-    case EXPR_NUMBER:
-    case EXPR_NULL:
+    default:
       return;
   }
 }

@@ -13,7 +13,8 @@ void initVM(VM* vm, Chunk* chunk) {
   vm->stackTop = vm->valueStack;
 }
 
-void freeVM(VM* vm) {
+void resetVM(VM* vm) {
+  vm->stackTop = vm->valueStack;
 }
 
 void push(VM* vm, Value val) {
@@ -93,14 +94,15 @@ static InterpretResult run(VM* vm) {
 InterpretResult interpret(VM* vm, const char* source) {
   Parser parser;
   Statements statements = parse(&parser, source);
+
   if (!compile(vm->chunk, &statements)) {
     freeStatements(&statements);
     return COMPILE_ERROR;
   }
   freeStatements(&statements);
+  writeChunk(vm->chunk, OP_RETURN, 999);
 
   // setting instruction pointer to first instruction in chunk
   vm->ip = vm->chunk->code;
-  //return run(vm);
-  return INTERPRET_OK;
+  return run(vm);
 }

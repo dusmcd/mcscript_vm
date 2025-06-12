@@ -32,7 +32,7 @@ typedef enum {
 } InterpretResult;
 
 void initVM(VM* vm, Chunk* chunk);
-void freeVM(VM* vm);
+void resetVM(VM* vm);
 InterpretResult interpret(VM* vm, const char* source);
 void push(VM* vm, Value val);
 Value pop(VM* vm);

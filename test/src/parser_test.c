@@ -265,7 +265,7 @@ static void testReturnStmt() {
 
 static void testNumberExpression() {
   Parser parser;
-  Test tests = {.count = 3, .tests = {"10", "11", "10.12"}};
+  Test tests = {.count = 3, .tests = {"10;", "11;", "10.12;"}};
   for (int i = 0; i < tests.count; i++) {
     Statements stmts = parse(&parser, tests.tests[i]);
     if (stmts.count != 1) {

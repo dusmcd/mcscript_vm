@@ -62,6 +62,8 @@ static void repl(VM* vm) {
     }
 
     InterpretResult result = interpret(vm, line);
+    freeChunk(vm->chunk);
+    resetVM(vm);
     if (result == COMPILE_ERROR) {
       fprintf(stderr, "compilation error\n");
       exit(60);
@@ -85,6 +87,7 @@ int main(int argc, char** argv) {
     InterpretResult result = interpret(&vm, source);
     free((char*)source);
     source = NULL;
+    freeChunk(&chunk);
 
     if (result == COMPILE_ERROR) {
       fprintf(stderr, "compilation error\n");
@@ -95,8 +98,5 @@ int main(int argc, char** argv) {
     return -1;
   }
   
-  freeChunk(&chunk);
-  freeVM(&vm);
-
   return 0;
 }
