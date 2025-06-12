@@ -17,6 +17,30 @@ static void compilePrefix(Chunk* chunk, Prefix* prefix) {
   }
 }
 
+static void compileInfix(Chunk* chunk, Infix* infix) {
+  compileExpression(chunk, infix->left);
+  compileExpression(chunk, infix->right);
+
+  switch(infix->operator) {
+    case TOKEN_PLUS: {
+      writeChunk(chunk, OP_ADD, infix->token.line);
+      break;
+    }
+    case TOKEN_MINUS:
+      writeChunk(chunk, OP_SUBTRACT, infix->token.line);
+      break;
+    case TOKEN_STAR:
+      writeChunk(chunk, OP_MULTIPLY, infix->token.line);
+      break;
+    case TOKEN_SLASH:
+      writeChunk(chunk, OP_DIVIDE, infix->token.line);
+      break;
+    default: {
+      // handle error
+    }
+  }
+}
+
 static bool compileExpression(Chunk* chunk, Expression* expr) {
   switch(expr->type) {
     case EXPR_PREFIX: {
@@ -24,7 +48,8 @@ static bool compileExpression(Chunk* chunk, Expression* expr) {
       compilePrefix(chunk, &prefix);
       break;
     case EXPR_INFIX: {
-      // compile infix expression
+      Infix infix = expr->data.infix;
+      compileInfix(chunk, &infix);
       break;
     }
     case EXPR_GROUP: {
@@ -44,7 +69,6 @@ static bool compileExpression(Chunk* chunk, Expression* expr) {
     case EXPR_NULL: break;
   }
 
-  freeExpression(expr);
   return true;
 }
 
@@ -58,7 +82,9 @@ static bool compileStatement(Chunk* chunk, const Statement* stmt) {
       break;
     case STMT_EXPR: {
       Expression expr = stmt->data.expressionStmt.expression;
-      return compileExpression(chunk, &expr);
+      bool result = compileExpression(chunk, &expr);
+      freeExpression(&expr);
+      return result;
     }
     case STMT_NULL:
       return true;
