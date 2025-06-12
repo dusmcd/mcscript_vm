@@ -10,6 +10,6 @@
  * compile the source code into bytecode instructions
  * and store them in chunk
  */
-bool compile(Chunk* chunk, Statements statements);
+bool compile(Chunk* chunk, const Statements* statements);
 
 #endif

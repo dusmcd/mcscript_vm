@@ -93,7 +93,10 @@ static InterpretResult run(VM* vm) {
 InterpretResult interpret(VM* vm, const char* source) {
   Parser parser;
   Statements statements = parse(&parser, source);
-  compile(vm->chunk, statements);
+  if (!compile(vm->chunk, &statements)) {
+    freeStatements(&statements);
+    return COMPILE_ERROR;
+  }
   freeStatements(&statements);
 
   // setting instruction pointer to first instruction in chunk
