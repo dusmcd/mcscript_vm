@@ -22,6 +22,10 @@ void push(VM* vm, Value val) {
   vm->stackTop++;
 }
 
+static Value peek(VM* vm) {
+  return vm->stackTop[-1];
+}
+
 Value pop(VM* vm) {
   vm->stackTop--;
   return (*vm->stackTop);
@@ -36,9 +40,15 @@ static InterpretResult run(VM* vm) {
   (vm->chunk->constants.data[READ_BYTE()])
 #define BINARY_OP(op) \
   do { \
-    double b = pop(vm); \
-    double a = pop(vm); \
-    push(vm, a op b); \
+    if (peek(vm).type != VAL_NUMBER || peek(vm).type != VAL_NUMBER) { \
+      resetVM(vm); \
+      return RUNTIME_ERROR; \
+    } \
+    double b = AS_NUMBER(pop(vm)); \
+    double a = AS_NUMBER(pop(vm)); \
+    double result = a op b; \
+    Value value = NUMBER_VAL(result); \
+    push(vm, value); \
   } while(false)
 
   while(true) {
@@ -75,7 +85,12 @@ static InterpretResult run(VM* vm) {
         break;
       }
       case OP_NEGATE: {
-        push(vm, -pop(vm));
+        if (peek(vm).type != VAL_NUMBER) {
+          resetVM(vm);
+          return RUNTIME_ERROR;
+        }
+        Value val = NUMBER_VAL(-AS_NUMBER(pop(vm)));
+        push(vm, val);
         break;
       }
       case OP_RETURN:

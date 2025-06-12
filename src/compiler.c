@@ -59,7 +59,8 @@ static bool compileExpression(Chunk* chunk, Expression* expr) {
     }
     case EXPR_NUMBER: {
       Number number = expr->data.number;
-      int i = addConstant(chunk, number.value); 
+      Value val = NUMBER_VAL(number.value);
+      int i = addConstant(chunk, val); 
       writeChunk(chunk, OP_CONSTANT, number.token.line);
       writeChunk(chunk, i, number.token.line);
       break;

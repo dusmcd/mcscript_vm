@@ -20,7 +20,8 @@ static int constantInstruction(const char* name, Chunk* chunk, int offset) {
   printf("%s '", name); 
   uint8_t valIndex = chunk->code[offset + 1];
   Value val = chunk->constants.data[valIndex];
-  printf("%g'\n", val);
+  printValue(val);
+  printf("'\n");
 
   return offset + 2;
 }
