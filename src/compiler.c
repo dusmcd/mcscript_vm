@@ -53,7 +53,8 @@ static bool compileExpression(Chunk* chunk, Expression* expr) {
       break;
     }
     case EXPR_GROUP: {
-      // compile group expression
+      Group group = expr->data.group;
+      compileExpression(chunk, group.expr);
       break;
     }
     case EXPR_NUMBER: {

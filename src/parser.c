@@ -66,9 +66,11 @@ static Expression binary(Parser* parser, Scanner* scanner, Expression left) {
   *leftP = left;
   infix.left = leftP;
 
+  // getting the precedence of the operator
+  Precedence prec = getRule(parser->previous.type).precedence;
   advance(parser, scanner);
 
-  Expression right = parseExpression(parser, scanner, getRule(parser->previous.type).precedence);
+  Expression right = parseExpression(parser, scanner, prec);
   Expression* rightP = (Expression*)malloc(sizeof(Expression));
   *rightP = right;
   infix.right = rightP;
