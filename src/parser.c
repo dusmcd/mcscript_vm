@@ -11,6 +11,10 @@ static Expression parseExpression(Parser*, Scanner*, Precedence);
 static Expression grouped(Parser*, Scanner*);
 static bool expect(Parser*, Scanner*, TokenType);
 
+static void error(Parser* parser, const char* msg) {
+  fprintf(stderr, "[line %d]: Error: %s\n", parser->previous.line, msg);
+}
+
 static void advance(Parser* parser, Scanner* scanner) {
   parser->previous = parser->current;
   parser->current = scanToken(scanner);
@@ -45,6 +49,9 @@ static Expression grouped(Parser* parser, Scanner* scanner) {
   // jump over right paren
   if (!expect(parser, scanner, TOKEN_RIGHT_PAREN)) {
     // handle error
+    error(parser, "unexpected token");
+    Expression expr = {.type = EXPR_ERROR};
+    return expr;
   }
   
   Expression expr = {.type = EXPR_GROUP};
@@ -125,6 +132,11 @@ static Expression parseExpression(Parser* parser, Scanner* scanner, Precedence p
   PrefixFn prefixFn = rule.prefix;
   if (prefixFn == NULL) {
     // handle error
+    char buff[256];
+    snprintf(buff, sizeof(buff), "no parser function for token %d", parser->previous.type);
+    error(parser, buff);
+    Expression expr = {.type = EXPR_ERROR};
+    return expr;
   }
 
   Expression expr = prefixFn(parser, scanner);

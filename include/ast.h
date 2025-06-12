@@ -21,6 +21,7 @@ typedef enum {
   EXPR_PREFIX,
   EXPR_INFIX,
   EXPR_GROUP,
+  EXPR_ERROR,
   EXPR_NULL
 } ExpressionType;
 

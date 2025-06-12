@@ -21,6 +21,36 @@ static bool testNumber(Expression expr, double expected) {
   return true;
 }
 
+static void testErrors() {
+  Parser parser;
+  Test test = {.count = 1, .tests = {"(5 + 1 * 3;"}};
+
+  for (int i = 0; i < test.count; i++) {
+    const char* source = test.tests[i];
+    Statements stmts = parse(&parser, source);
+
+    if (stmts.count != 1) {
+      fprintf(stderr, "stmts does not contain 1 statement got=%d\n", 
+          stmts.count);
+      return;
+    }
+
+    Statement statement = stmts.stmts[0];
+    if (statement.type != STMT_EXPR) {
+      fprintf(stderr, "statement is not STMT_EXPR\n");
+      return;
+    }
+
+    Expression expr = statement.data.expressionStmt.expression;
+    if (expr.type != EXPR_ERROR) {
+      fprintf(stderr, "expr is not EXPR_ERROR\n");
+      return;
+    }
+  }
+
+  printf("testErrors() passed\n");
+}
+
 static void testPrefixExpression() {
   Parser parser;
 
@@ -306,5 +336,6 @@ void testParser() {
   testPrefixExpression();
   testInfixExpressions();
   testGroupExpression();
+  testErrors();
   printf("\n");
 }
