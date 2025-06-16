@@ -8,7 +8,7 @@
 #define AS_NULL(value) value.as.null
 
 #define NUMBER_VAL(num) (Value){VAL_NUMBER, {.number = num}}
-#define BOOL_VAL(boolean) (Value){VAL_BOOL, {.boolean = boolean}}
+#define BOOL_VAL(val) (Value){VAL_BOOL, {.boolean = val}}
 #define NULL_VAL (Value){VAL_NULL, {.null = 0}}
 
 

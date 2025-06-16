@@ -93,6 +93,21 @@ static InterpretResult run(VM* vm) {
         push(vm, val);
         break;
       }
+      case OP_TRUE: {
+        Value val = BOOL_VAL(true);
+        push(vm, val);
+        break;
+      }
+      case OP_FALSE: {
+        Value val = BOOL_VAL(false);
+        push(vm, val);
+        break;
+      }
+      case OP_NULL: {
+        Value val = NULL_VAL;
+        push(vm, val);
+        break;
+      }
       case OP_RETURN:
         printValue(pop(vm));
         printf("\n");

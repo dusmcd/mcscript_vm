@@ -1,3 +1,4 @@
+#include "chunk.h"
 #include <debug.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -33,7 +34,7 @@ int disassembleInstruction(Chunk* chunk, int offset) {
   if (offset > 0 && chunk->lines[offset] == chunk->lines[offset - 1]) {
     printf("  |  ");
   } else {
-    printf("%d  ", chunk->lines[offset]);
+    printf("  %d  ", chunk->lines[offset]);
   }
 
   switch(instruction) {
@@ -51,6 +52,12 @@ int disassembleInstruction(Chunk* chunk, int offset) {
       return simpleInstruction("OP_MULTIPLY", offset);
     case OP_DIVIDE:
       return simpleInstruction("OP_DIVIDE", offset);
+    case OP_TRUE:
+      return simpleInstruction("OP_TRUE", offset);
+    case OP_FALSE:
+      return simpleInstruction("OP_FALSE", offset);
+    case OP_NULL:
+      return simpleInstruction("OP_NULL", offset);
     default:
       printf("%d Unknown operator\n", instruction);
       return offset + 1;

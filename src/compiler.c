@@ -1,3 +1,4 @@
+#include "ast.h"
 #include <compiler.h>
 #include <scanner.h>
 #include <chunk.h>
@@ -68,7 +69,16 @@ static bool compileExpression(Chunk* chunk, Expression* expr) {
     case EXPR_ERROR:
       return false;
     }
-    case EXPR_NULL: break;
+    case EXPR_BOOL:
+      if (expr->data.boolean.value) {
+        writeChunk(chunk, OP_TRUE, expr->data.boolean.token.line);
+      } else {
+        writeChunk(chunk, OP_FALSE, expr->data.boolean.token.line);
+      }
+      break;
+    case EXPR_NULL: 
+      writeChunk(chunk, OP_NULL, expr->data.number.token.line);
+      break;
   }
 
   return true;
