@@ -157,7 +157,10 @@ static TokenType getIdentifierType(Scanner* scanner, int length) {
       if (length == 3 &&
           memcmp(scanner->start + 1, "or", 2) == 0) {
         return TOKEN_FOR;
-      }
+      } else if (length == 5 &&
+         memcmp(scanner->start + 1, "alse", 4) == 0) {
+        return TOKEN_FALSE;
+      } 
       else if (length == 8 &&
           memcmp(scanner->start + 1, "unction", 7) == 0) {
         return TOKEN_FUNCTION;
@@ -181,6 +184,11 @@ static TokenType getIdentifierType(Scanner* scanner, int length) {
         return TOKEN_RETURN;
       }
       break;
+    case 't':
+      if (length == 4 &&
+          memcmp(scanner->start + 1, "rue", 3) == 0) {
+        return TOKEN_TRUE;
+      }
     case 'v':
       if (length == 3 &&
           memcmp(scanner->start + 1, "ar", 2) == 0) {

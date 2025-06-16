@@ -10,6 +10,7 @@ static Expression binary(Parser*, Scanner*, Expression);
 static Expression parseExpression(Parser*, Scanner*, Precedence);
 static Expression grouped(Parser*, Scanner*);
 static bool expect(Parser*, Scanner*, TokenType);
+static Expression boolean(Parser*, Scanner*);
 
 static void error(Parser* parser, const char* msg) {
   fprintf(stderr, "[line %d]: Error: %s\n", parser->previous.line, msg);
@@ -29,11 +30,20 @@ const ParserRule rules[] = {
   [TOKEN_SLASH] = {NULL, binary, PREC_FACTOR},
   [TOKEN_BANG] = {unary, NULL, PREC_UNARY},
   [TOKEN_LEFT_PAREN] = {grouped, NULL, PREC_NONE},
-  [TOKEN_RIGHT_PAREN] = {NULL, NULL, PREC_NONE}
+  [TOKEN_RIGHT_PAREN] = {NULL, NULL, PREC_NONE},
+  [TOKEN_TRUE] = {boolean, NULL, PREC_NONE},
+  [TOKEN_FALSE] = {boolean, NULL, PREC_NONE}
 };
 
 static ParserRule getRule(TokenType type) {
   return rules[type];
+}
+
+static Expression boolean(Parser* parser, Scanner* scanner) {
+  Boolean boolean = {.token = parser->previous};
+  boolean.value = parser->previous.type == TOKEN_TRUE ? true : false;
+  Expression expr = {.type = EXPR_BOOL, .data = {.boolean = boolean}};
+  return expr;
 }
 
 static Expression grouped(Parser* parser, Scanner* scanner) {
@@ -174,6 +184,8 @@ static VarStatement parseVarStatement(Parser* parser, Scanner* scanner) {
 
   if (!expect(parser, scanner, TOKEN_IDENTIFIER)) {
     // handle error
+    error(parser, "expected identifier");
+    return vs;
   }
 
   Identifier name = {.length = parser->previous.length, .start = parser->previous.start};

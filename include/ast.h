@@ -2,6 +2,7 @@
 #define MCSCRIPT_VM_AST_H
 
 #include <scanner.h>
+#include <stdbool.h>
 
 typedef struct expression Expression;
 
@@ -21,6 +22,7 @@ typedef enum {
   EXPR_PREFIX,
   EXPR_INFIX,
   EXPR_GROUP,
+  EXPR_BOOL,
   EXPR_ERROR,
   EXPR_NULL
 } ExpressionType;
@@ -29,6 +31,11 @@ typedef struct {
   double value;
   Token token;
 } Number;
+
+typedef struct {
+  Token token;
+  bool value;
+} Boolean;
 
 /**
  * e.g., -6, !10
@@ -63,6 +70,7 @@ typedef union {
   Prefix prefix; // => EXPR_PREFIX
   Infix infix; // => EXPR_INFIX
   Group group; // => EXPR_GROUP
+  Boolean boolean; // => EXPR_BOOL
 } ExpressionData;
 
 /**

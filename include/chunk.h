@@ -18,6 +18,9 @@ typedef enum {
   OP_SUBTRACT,
   OP_MULTIPLY,
   OP_DIVIDE,
+  OP_TRUE,
+  OP_FALSE,
+  OP_NULL,
   OP_RETURN // return instruction (i.e., pop function off stack and return to next instruction)
 } OpCode;
 

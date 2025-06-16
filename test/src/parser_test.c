@@ -51,6 +51,44 @@ static void testErrors() {
   printf("testErrors() passed\n");
 }
 
+static void testBooleanExpressions() {
+  Parser parser;
+  Test test = {.count = 2, .tests = {"true;", "false;"}, .expectedNums = {true, false}};
+
+  for (int i = 0; i < test.count; i++) {
+    const char* source = test.tests[i];
+    Statements stmts = parse(&parser, source);
+
+    if (stmts.count != 1) {
+      fprintf(stderr, "stmts does not contain 1 statement got=%d\n",
+          stmts.count);
+      return;
+    }
+
+    Statement statement = stmts.stmts[0];
+    if (statement.type != STMT_EXPR) {
+      fprintf(stderr, "statement is not STMT_EXPR\n");
+      return;
+    }
+
+    Expression expr = statement.data.expressionStmt.expression;
+    if (expr.type != EXPR_BOOL) {
+      fprintf(stderr, "expr is not EXPR_BOOL\n");
+      return;
+    }
+
+    Boolean boolean = expr.data.boolean;
+    if (boolean.value != test.expectedNums[i]) {
+      fprintf(stderr, "wrong value. expected=%d got=%d\n", 
+          test.expectedNums[i], boolean.value);
+      return;
+    }
+    freeStatements(&stmts);
+  }
+
+  printf("testBooleanExpressions() passed\n");
+}
+
 static void testPrefixExpression() {
   Parser parser;
 
@@ -337,5 +375,6 @@ void testParser() {
   testInfixExpressions();
   testGroupExpression();
   testErrors();
+  testBooleanExpressions();
   printf("\n");
 }

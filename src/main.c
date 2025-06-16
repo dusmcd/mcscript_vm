@@ -68,6 +68,11 @@ static void repl(VM* vm) {
       fprintf(stderr, "compilation error\n");
       exit(60);
     }
+
+    if (result == RUNTIME_ERROR) {
+      fprintf(stderr, "runtime error\n");
+      exit(70);
+    }
   }
 }
 
@@ -92,6 +97,11 @@ int main(int argc, char** argv) {
     if (result == COMPILE_ERROR) {
       fprintf(stderr, "compilation error\n");
       exit(70);
+    }
+
+    if (result == RUNTIME_ERROR) {
+      fprintf(stderr, "runtime error\n");
+      exit(80);
     }
   } else {
     fprintf(stderr, "usage: mcscript_vm <path | optional>\n");
