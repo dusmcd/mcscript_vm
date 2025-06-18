@@ -13,8 +13,11 @@ static void compilePrefix(Chunk* chunk, Prefix* prefix) {
   if (prefix->operator == TOKEN_MINUS) {
     compileExpression(chunk, prefix->expression);
     writeChunk(chunk, OP_NEGATE, prefix->token.line);
+  } else if (prefix->operator == TOKEN_BANG){
+    compileExpression(chunk, prefix->expression);
+    writeChunk(chunk, OP_NOT, prefix->token.line);
   } else {
-    // implement bang operator later
+    // handle error
   }
 }
 

@@ -66,12 +66,10 @@ static void repl(VM* vm) {
     resetVM(vm);
     if (result == COMPILE_ERROR) {
       fprintf(stderr, "compilation error\n");
-      exit(60);
     }
 
     if (result == RUNTIME_ERROR) {
       fprintf(stderr, "runtime error\n");
-      exit(70);
     }
   }
 }

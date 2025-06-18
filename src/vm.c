@@ -1,3 +1,4 @@
+#include "value.h"
 #include <chunk.h>
 #include <common.h>
 #include <vm.h>
@@ -22,8 +23,8 @@ void push(VM* vm, Value val) {
   vm->stackTop++;
 }
 
-static Value peek(VM* vm) {
-  return vm->stackTop[-1];
+static Value peek(VM* vm, int offset) {
+  return vm->stackTop[-offset];
 }
 
 Value pop(VM* vm) {
@@ -31,6 +32,57 @@ Value pop(VM* vm) {
   return (*vm->stackTop);
 }
 
+static bool isFalsey(Value val) {
+  return IS_NULL(val) || (IS_BOOL(val) && !AS_BOOL(val));
+}
+
+static bool binaryOp(VM* vm, ValueType valType, OpCode op) {
+#define NUM_OP(operator, macro, type) \
+  do { \
+    double b = AS_NUMBER(pop(vm)); \
+    double a = AS_NUMBER(pop(vm)); \
+    type result = a operator b; \
+    Value value = macro(result); \
+    push(vm, value); \
+  } while(false)
+
+  switch(valType) {
+    case VAL_NUMBER: {
+      if (peek(vm, 1).type != VAL_NUMBER || peek(vm, 2).type != VAL_NUMBER) {
+          return false;
+      }
+
+      switch(op) {
+        case OP_ADD: 
+          NUM_OP(+, NUMBER_VAL, double);
+          break;
+        case OP_SUBTRACT: NUM_OP(-, NUMBER_VAL, double); break;
+        case OP_MULTIPLY: NUM_OP(*, NUMBER_VAL, double); break;
+        case OP_DIVIDE: NUM_OP(/, NUMBER_VAL, double); break;
+        default: return false;
+      } 
+      return true;
+    }
+
+   case VAL_BOOL: {
+    if (peek(vm, 1).type != VAL_NUMBER || peek(vm, 2).type != VAL_NUMBER) {
+      return false;
+    }
+    switch(op) {
+      case OP_LESS: NUM_OP(<, BOOL_VAL, bool); break;
+      case OP_GREATER: NUM_OP(>, BOOL_VAL, bool); break;
+      default: return false;
+    }
+    return true;
+   }
+
+   default: {
+      // handle error
+   }
+ }
+#undef NUM_OP
+  return true;
+}
 
 
 static InterpretResult run(VM* vm) {
@@ -38,18 +90,6 @@ static InterpretResult run(VM* vm) {
 #define READ_BYTE() *(vm->ip++)
 #define READ_CONSTANT() \
   (vm->chunk->constants.data[READ_BYTE()])
-#define BINARY_OP(op) \
-  do { \
-    if (peek(vm).type != VAL_NUMBER || peek(vm).type != VAL_NUMBER) { \
-      resetVM(vm); \
-      return RUNTIME_ERROR; \
-    } \
-    double b = AS_NUMBER(pop(vm)); \
-    double a = AS_NUMBER(pop(vm)); \
-    double result = a op b; \
-    Value value = NUMBER_VAL(result); \
-    push(vm, value); \
-  } while(false)
 
   while(true) {
 #ifdef DEBUG_STACK_TRACE
@@ -69,23 +109,23 @@ static InterpretResult run(VM* vm) {
         break;
       }
       case OP_ADD: {
-        BINARY_OP(+);
-        break;
+        if (binaryOp(vm, VAL_NUMBER, OP_ADD)) break;
+        return RUNTIME_ERROR;
       }
       case OP_SUBTRACT: {
-        BINARY_OP(-);
-        break;
+        if (binaryOp(vm, VAL_NUMBER, OP_SUBTRACT)) break;
+        return RUNTIME_ERROR;
       }
       case OP_MULTIPLY: {
-        BINARY_OP(*);
-        break;
+        if (binaryOp(vm, VAL_NUMBER, OP_MULTIPLY)) break;
+        return RUNTIME_ERROR;
       }
       case OP_DIVIDE: {
-        BINARY_OP(/);
-        break;
+        if (binaryOp(vm, VAL_NUMBER, OP_DIVIDE)) break;
+        return RUNTIME_ERROR;
       }
       case OP_NEGATE: {
-        if (peek(vm).type != VAL_NUMBER) {
+        if (peek(vm, 1).type != VAL_NUMBER) {
           resetVM(vm);
           return RUNTIME_ERROR;
         }
@@ -93,6 +133,9 @@ static InterpretResult run(VM* vm) {
         push(vm, val);
         break;
       }
+      case OP_NOT:
+        push(vm, BOOL_VAL(isFalsey(pop(vm))));
+        break;
       case OP_TRUE: {
         Value val = BOOL_VAL(true);
         push(vm, val);
@@ -117,7 +160,6 @@ static InterpretResult run(VM* vm) {
 
 #undef READ_BYTE
 #undef READ_CONSTANT
-#undef BINARY_OP
 }
 
 

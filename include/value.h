@@ -11,6 +11,9 @@
 #define BOOL_VAL(val) (Value){VAL_BOOL, {.boolean = val}}
 #define NULL_VAL (Value){VAL_NULL, {.null = 0}}
 
+#define IS_BOOL(value) value.type == VAL_BOOL
+#define IS_NULL(value) value.type == VAL_NULL
+
 
 /**
  * the set of all possible value types the

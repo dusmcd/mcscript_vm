@@ -20,6 +20,10 @@ typedef enum {
   OP_DIVIDE,
   OP_TRUE,
   OP_FALSE,
+  OP_NOT,
+  OP_LESS,
+  OP_GREATER,
+  OP_EQUAL,
   OP_NULL,
   OP_RETURN // return instruction (i.e., pop function off stack and return to next instruction)
 } OpCode;
