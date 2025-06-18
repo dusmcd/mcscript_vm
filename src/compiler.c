@@ -39,6 +39,27 @@ static void compileInfix(Chunk* chunk, Infix* infix) {
     case TOKEN_SLASH:
       writeChunk(chunk, OP_DIVIDE, infix->token.line);
       break;
+    case TOKEN_LESS:
+      writeChunk(chunk, OP_LESS, infix->token.line);
+      break;
+    case TOKEN_GREATER:
+      writeChunk(chunk, OP_GREATER, infix->token.line);
+      break;
+    case TOKEN_EQUAL_EQUAL:
+      writeChunk(chunk, OP_EQUAL, infix->token.line);
+      break;
+    case TOKEN_BANG_EQUAL:
+      writeChunk(chunk, OP_EQUAL, infix->token.line);
+      writeChunk(chunk, OP_NOT, infix->token.line);
+      break;
+    case TOKEN_LESS_EQUAL:
+      writeChunk(chunk, OP_GREATER, infix->token.line);
+      writeChunk(chunk, OP_NOT, infix->token.line);
+      break;
+    case TOKEN_GREATER_EQUAL:
+      writeChunk(chunk, OP_LESS, infix->token.line);
+      writeChunk(chunk, OP_NOT, infix->token.line);
+      break;
     default: {
       // handle error
     }

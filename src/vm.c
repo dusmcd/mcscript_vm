@@ -84,6 +84,29 @@ static bool binaryOp(VM* vm, ValueType valType, OpCode op) {
   return true;
 }
 
+static bool evalEquals(VM* vm) {
+  
+  if (peek(vm, 1).type != peek(vm, 2).type) {
+    return false;
+  }
+
+  Value a = pop(vm);
+  Value b = pop(vm);
+
+  switch(a.type) {
+    case VAL_NUMBER:
+      push(vm, BOOL_VAL(AS_NUMBER(a) == AS_NUMBER(b)));
+      break;
+    case VAL_BOOL:
+      push(vm, BOOL_VAL(AS_BOOL(a) == AS_BOOL(b)));
+      break;
+    case VAL_NULL:
+      push(vm, BOOL_VAL(true));
+      break;
+  }
+  return true;
+}
+
 
 static InterpretResult run(VM* vm) {
 
@@ -122,6 +145,18 @@ static InterpretResult run(VM* vm) {
       }
       case OP_DIVIDE: {
         if (binaryOp(vm, VAL_NUMBER, OP_DIVIDE)) break;
+        return RUNTIME_ERROR;
+      }
+      case OP_LESS: {
+        if (binaryOp(vm, VAL_BOOL, OP_LESS)) break;
+        return RUNTIME_ERROR;
+      }
+      case OP_GREATER: {
+        if (binaryOp(vm, VAL_BOOL, OP_GREATER)) break;
+        return RUNTIME_ERROR;
+      }
+      case OP_EQUAL: {
+        if (evalEquals(vm)) break;
         return RUNTIME_ERROR;
       }
       case OP_NEGATE: {
