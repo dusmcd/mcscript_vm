@@ -6,14 +6,19 @@
 #define AS_NUMBER(value) value.as.number
 #define AS_BOOL(value) value.as.boolean
 #define AS_NULL(value) value.as.null
+#define AS_OBJ(value) value.as.obj
 
 #define NUMBER_VAL(num) (Value){VAL_NUMBER, {.number = num}}
 #define BOOL_VAL(val) (Value){VAL_BOOL, {.boolean = val}}
 #define NULL_VAL (Value){VAL_NULL, {.null = 0}}
+#define OBJ_VAL(object) (Value){VAL_OBJ, {.obj = (Obj*)object}}
 
 #define IS_BOOL(value) value.type == VAL_BOOL
 #define IS_NULL(value) value.type == VAL_NULL
+#define IS_OBJ(value) value.type == VAL_OBJ
 
+typedef struct obj Obj;
+typedef struct objString ObjString;
 
 /**
  * the set of all possible value types the
@@ -22,12 +27,14 @@
 typedef enum {
   VAL_NUMBER,
   VAL_BOOL,
+  VAL_OBJ,
   VAL_NULL 
 } ValueType;
 
 typedef union {
   double number; // => VAL_NUMBER
   bool boolean; // => VAL_BOOL
+  Obj* obj; // => VAL_OBJ
   int null; // => VAL_NULL
 } ValueData;
 
