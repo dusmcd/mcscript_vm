@@ -21,6 +21,13 @@ static void advance(Parser* parser, Scanner* scanner) {
   parser->current = scanToken(scanner);
 }
 
+static Expression string(Parser* parser, Scanner* scanner) {
+  String string = {.token = parser->previous};
+  Expression expr = {.data = {.string = string}, .type = EXPR_STRING};
+
+  return expr;
+}
+
 
 const ParserRule rules[] = {
   [TOKEN_NUMBER] = {number, NULL, PREC_NONE},
@@ -38,7 +45,8 @@ const ParserRule rules[] = {
   [TOKEN_EQUAL_EQUAL] = {NULL, binary, PREC_EQUALITY},
   [TOKEN_GREATER_EQUAL] = {NULL, binary, PREC_COMPARISON},
   [TOKEN_BANG_EQUAL] = {NULL, binary, PREC_EQUALITY},
-  [TOKEN_LESS_EQUAL] = {NULL, binary, PREC_COMPARISON}
+  [TOKEN_LESS_EQUAL] = {NULL, binary, PREC_COMPARISON},
+  [TOKEN_STRING] = {string, NULL, PREC_NONE}
 };
 
 static ParserRule getRule(TokenType type) {

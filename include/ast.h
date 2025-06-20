@@ -23,6 +23,7 @@ typedef enum {
   EXPR_INFIX,
   EXPR_GROUP,
   EXPR_BOOL,
+  EXPR_STRING,
   EXPR_ERROR,
   EXPR_NULL
 } ExpressionType;
@@ -61,6 +62,10 @@ typedef struct {
   Expression* expr;
 } Group;
 
+typedef struct {
+  Token token;
+} String;
+
 
 /**
  * all the structures for different expression types
@@ -71,6 +76,7 @@ typedef union {
   Infix infix; // => EXPR_INFIX
   Group group; // => EXPR_GROUP
   Boolean boolean; // => EXPR_BOOL
+  String string; // => EXPR_STRING
 } ExpressionData;
 
 /**

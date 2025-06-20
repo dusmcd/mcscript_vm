@@ -5,6 +5,7 @@
 
 /**
  * macros for managing memory of dynamic arrays (e.g., Chunk, ValueArray)
+ * and other dynamically allocated objects
  */
 
 #define GROW_CAPACITY(capacity) \
@@ -16,8 +17,11 @@
 #define FREE_ARRAY(type, pointer, oldCapacity) \
   (type*)reallocate(pointer, sizeof(type) * oldCapacity, 0)
 
+#define ALLOCATE(type, pointer, size) \
+  (type*)reallocate(pointer, 0, sizeof(type) * size)
+
 /**
- * allocates memory on the heap for arrays
+ * allocates memory on the heap
  * will resize as needed
  */
 void* reallocate(void* pointer, size_t oldCapacity, size_t newCapacity);

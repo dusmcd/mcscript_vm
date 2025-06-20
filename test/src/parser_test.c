@@ -21,6 +21,59 @@ static bool testNumber(Expression expr, double expected) {
   return true;
 }
 
+static void testStringExpressions() {
+  Parser parser;
+  Test test = {
+    .count = 2,
+    .tests = {"\"hello world!\";", "\"hello\";"},
+    .expectedNums = {strlen("hello world!"), strlen("hello")}
+  };
+
+  for (int i = 0; i < test.count; i++) {
+    const char* source = test.tests[i];
+    Statements stmts = parse(&parser, source);
+
+    if (stmts.count != 1) {
+      fprintf(stderr, "stmts does not contain 1 statement got=%d\n",
+          stmts.count);
+      return;
+    }
+
+    Statement statement = stmts.stmts[0];
+    if (statement.type != STMT_EXPR) {
+      fprintf(stderr, "statement not STMT_EXPR\n");
+      return;
+    }
+
+    Expression expr = statement.data.expressionStmt.expression;
+    if (expr.type != EXPR_STRING) {
+      fprintf(stderr, "expression not EXPR_STRING\n");
+      return;
+    }
+
+    String str = expr.data.string;
+
+    // accounting for opening and closing quotation marks
+    int expectedLength = test.expectedNums[i];
+    int actualLength = str.token.length - 2;
+    if (expectedLength != actualLength) {
+      fprintf(stderr, "str wrong length. expected=%d got=%d\n",
+          test.expectedNums[i], str.token.length);
+      return;
+    }
+
+    if (memcmp(str.token.start + 1, source + 1, expectedLength) != 0) {
+      fprintf(stderr, "str wrong value expected=%.*s got=%.*s\n",
+           expectedLength, source + 1, actualLength, str.token.start + 1);
+      return;
+    }
+
+    freeStatements(&stmts);
+  }
+
+  printf("testStringExpressions() passed\n");
+}
+
 static void testErrors() {
   Parser parser;
   Test test = {.count = 1, .tests = {"(5 + 1 * 3;"}};
@@ -376,5 +429,6 @@ void testParser() {
   testGroupExpression();
   testErrors();
   testBooleanExpressions();
+  testStringExpressions();
   printf("\n");
 }
