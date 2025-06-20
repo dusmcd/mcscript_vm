@@ -1,6 +1,7 @@
 #include <value.h>
 #include <memory.h>
 #include <stdio.h>
+#include <object.h>
 
 
 void initValueArray(ValueArray* array) {
@@ -25,6 +26,15 @@ void freeValueArray(ValueArray* array) {
   initValueArray(array);
 }
 
+static void printObject(ObjType type, Value val) {
+  switch(type) {
+    case OBJ_STRING: {
+      char* str = AS_CSTRING(val);
+      printf("%s", str);
+    }
+  }
+}
+
 void printValue(Value val) {
   switch (val.type) {
     case VAL_NUMBER:
@@ -35,6 +45,9 @@ void printValue(Value val) {
       break;
     case VAL_NULL:
       printf("%s", "null");
+      break;
+    case VAL_OBJ:
+      printObject(OBJ_TYPE(val), val);
       break;
   }
 }

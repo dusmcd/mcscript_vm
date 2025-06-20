@@ -1,4 +1,5 @@
-#include "ast.h"
+#include <ast.h>
+#include <value.h>
 #include <compiler.h>
 #include <scanner.h>
 #include <chunk.h>
@@ -6,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <object.h>
 
 static bool compileExpression(Chunk*, Expression*);
 
@@ -66,6 +68,12 @@ static void compileInfix(Chunk* chunk, Infix* infix) {
   }
 }
 
+static void writeConstant(Chunk* chunk, Value val, int line) {
+  int i = addConstant(chunk, val);
+  writeChunk(chunk, OP_CONSTANT, line);
+  writeChunk(chunk, i, line);
+}
+
 static bool compileExpression(Chunk* chunk, Expression* expr) {
   switch(expr->type) {
     case EXPR_PREFIX: {
@@ -85,9 +93,16 @@ static bool compileExpression(Chunk* chunk, Expression* expr) {
     case EXPR_NUMBER: {
       Number number = expr->data.number;
       Value val = NUMBER_VAL(number.value);
-      int i = addConstant(chunk, val); 
-      writeChunk(chunk, OP_CONSTANT, number.token.line);
-      writeChunk(chunk, i, number.token.line);
+      writeConstant(chunk, val, number.token.line);
+      break;
+    }
+    case EXPR_STRING: {
+      Obj* obj = createObject(expr, OBJ_STRING);
+      if (obj == NULL) {
+        return false;
+      }
+      Value val = OBJ_VAL(obj);
+      writeConstant(chunk, val, expr->data.string.token.line);
       break;
     }
     case EXPR_ERROR:

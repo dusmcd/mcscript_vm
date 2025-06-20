@@ -17,8 +17,8 @@
 #define FREE_ARRAY(type, pointer, oldCapacity) \
   (type*)reallocate(pointer, sizeof(type) * oldCapacity, 0)
 
-#define ALLOCATE(type, pointer, size) \
-  (type*)reallocate(pointer, 0, sizeof(type) * size)
+#define ALLOCATE(type, size) \
+  (type*)reallocate(NULL, 0, sizeof(type) * size)
 
 /**
  * allocates memory on the heap
