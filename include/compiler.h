@@ -5,11 +5,12 @@
 #include <scanner.h>
 #include <stdbool.h>
 #include <parser.h>
+#include <vm.h>
 
 /**
  * compile the source code into bytecode instructions
  * and store them in chunk
  */
-bool compile(Chunk* chunk, const Statements* statements);
+bool compile(VM* vm, const Statements* statements);
 
 #endif

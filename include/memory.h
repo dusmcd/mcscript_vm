@@ -20,6 +20,9 @@
 #define ALLOCATE(type, size) \
   (type*)reallocate(NULL, 0, sizeof(type) * size)
 
+#define FREE(type, pointer) \
+  reallocate(pointer, sizeof(type), 0)
+
 /**
  * allocates memory on the heap
  * will resize as needed

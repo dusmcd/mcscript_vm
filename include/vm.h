@@ -23,6 +23,7 @@ typedef struct {
    */
   Value* stackTop;
   Chunk* chunk;
+  Obj* objects;
 } VM;
 
 typedef enum {
@@ -33,6 +34,7 @@ typedef enum {
 
 void initVM(VM* vm, Chunk* chunk);
 void resetVM(VM* vm);
+void freeVM(VM* vm);
 InterpretResult interpret(VM* vm, const char* source);
 void push(VM* vm, Value val);
 Value pop(VM* vm);

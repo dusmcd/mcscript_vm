@@ -33,15 +33,22 @@ static Obj* createString(const Expression* expr) {
 }
 
 
-Obj* createObject(const Expression* expr, ObjType type) {
+Obj* createObject(VM* vm, const Expression* expr, ObjType type) {
   // when the garbage collector is implemented this is where
   // the object tracking would start
+  Obj* obj;
   
   switch(type) {
     case OBJ_STRING: {
-      return createString(expr);
+      obj = createString(expr);
+      break;
     }
     default:
       return NULL;
   }
+
+  obj->next = vm->objects;
+  vm->objects = obj;
+
+  return obj;
 }

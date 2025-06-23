@@ -9,58 +9,58 @@
 #include <stdbool.h>
 #include <object.h>
 
-static bool compileExpression(Chunk*, Expression*);
+static bool compileExpression(VM*, Expression*);
 
-static void compilePrefix(Chunk* chunk, Prefix* prefix) {
+static void compilePrefix(VM* vm, Prefix* prefix) {
   if (prefix->operator == TOKEN_MINUS) {
-    compileExpression(chunk, prefix->expression);
-    writeChunk(chunk, OP_NEGATE, prefix->token.line);
+    compileExpression(vm, prefix->expression);
+    writeChunk(vm->chunk, OP_NEGATE, prefix->token.line);
   } else if (prefix->operator == TOKEN_BANG){
-    compileExpression(chunk, prefix->expression);
-    writeChunk(chunk, OP_NOT, prefix->token.line);
+    compileExpression(vm, prefix->expression);
+    writeChunk(vm->chunk, OP_NOT, prefix->token.line);
   } else {
     // handle error
   }
 }
 
-static void compileInfix(Chunk* chunk, Infix* infix) {
-  compileExpression(chunk, infix->left);
-  compileExpression(chunk, infix->right);
+static void compileInfix(VM* vm, Infix* infix) {
+  compileExpression(vm, infix->left);
+  compileExpression(vm, infix->right);
 
   switch(infix->operator) {
     case TOKEN_PLUS: {
-      writeChunk(chunk, OP_ADD, infix->token.line);
+      writeChunk(vm->chunk, OP_ADD, infix->token.line);
       break;
     }
     case TOKEN_MINUS:
-      writeChunk(chunk, OP_SUBTRACT, infix->token.line);
+      writeChunk(vm->chunk, OP_SUBTRACT, infix->token.line);
       break;
     case TOKEN_STAR:
-      writeChunk(chunk, OP_MULTIPLY, infix->token.line);
+      writeChunk(vm->chunk, OP_MULTIPLY, infix->token.line);
       break;
     case TOKEN_SLASH:
-      writeChunk(chunk, OP_DIVIDE, infix->token.line);
+      writeChunk(vm->chunk, OP_DIVIDE, infix->token.line);
       break;
     case TOKEN_LESS:
-      writeChunk(chunk, OP_LESS, infix->token.line);
+      writeChunk(vm->chunk, OP_LESS, infix->token.line);
       break;
     case TOKEN_GREATER:
-      writeChunk(chunk, OP_GREATER, infix->token.line);
+      writeChunk(vm->chunk, OP_GREATER, infix->token.line);
       break;
     case TOKEN_EQUAL_EQUAL:
-      writeChunk(chunk, OP_EQUAL, infix->token.line);
+      writeChunk(vm->chunk, OP_EQUAL, infix->token.line);
       break;
     case TOKEN_BANG_EQUAL:
-      writeChunk(chunk, OP_EQUAL, infix->token.line);
-      writeChunk(chunk, OP_NOT, infix->token.line);
+      writeChunk(vm->chunk, OP_EQUAL, infix->token.line);
+      writeChunk(vm->chunk, OP_NOT, infix->token.line);
       break;
     case TOKEN_LESS_EQUAL:
-      writeChunk(chunk, OP_GREATER, infix->token.line);
-      writeChunk(chunk, OP_NOT, infix->token.line);
+      writeChunk(vm->chunk, OP_GREATER, infix->token.line);
+      writeChunk(vm->chunk, OP_NOT, infix->token.line);
       break;
     case TOKEN_GREATER_EQUAL:
-      writeChunk(chunk, OP_LESS, infix->token.line);
-      writeChunk(chunk, OP_NOT, infix->token.line);
+      writeChunk(vm->chunk, OP_LESS, infix->token.line);
+      writeChunk(vm->chunk, OP_NOT, infix->token.line);
       break;
     default: {
       // handle error
@@ -74,35 +74,35 @@ static void writeConstant(Chunk* chunk, Value val, int line) {
   writeChunk(chunk, i, line);
 }
 
-static bool compileExpression(Chunk* chunk, Expression* expr) {
+static bool compileExpression(VM* vm, Expression* expr) {
   switch(expr->type) {
     case EXPR_PREFIX: {
       Prefix prefix = expr->data.prefix;
-      compilePrefix(chunk, &prefix);
+      compilePrefix(vm, &prefix);
       break;
     case EXPR_INFIX: {
       Infix infix = expr->data.infix;
-      compileInfix(chunk, &infix);
+      compileInfix(vm, &infix);
       break;
     }
     case EXPR_GROUP: {
       Group group = expr->data.group;
-      compileExpression(chunk, group.expr);
+      compileExpression(vm, group.expr);
       break;
     }
     case EXPR_NUMBER: {
       Number number = expr->data.number;
       Value val = NUMBER_VAL(number.value);
-      writeConstant(chunk, val, number.token.line);
+      writeConstant(vm->chunk, val, number.token.line);
       break;
     }
     case EXPR_STRING: {
-      Obj* obj = createObject(expr, OBJ_STRING);
+      Obj* obj = createObject(vm, expr, OBJ_STRING);
       if (obj == NULL) {
         return false;
       }
       Value val = OBJ_VAL(obj);
-      writeConstant(chunk, val, expr->data.string.token.line);
+      writeConstant(vm->chunk, val, expr->data.string.token.line);
       break;
     }
     case EXPR_ERROR:
@@ -110,20 +110,20 @@ static bool compileExpression(Chunk* chunk, Expression* expr) {
     }
     case EXPR_BOOL:
       if (expr->data.boolean.value) {
-        writeChunk(chunk, OP_TRUE, expr->data.boolean.token.line);
+        writeChunk(vm->chunk, OP_TRUE, expr->data.boolean.token.line);
       } else {
-        writeChunk(chunk, OP_FALSE, expr->data.boolean.token.line);
+        writeChunk(vm->chunk, OP_FALSE, expr->data.boolean.token.line);
       }
       break;
     case EXPR_NULL: 
-      writeChunk(chunk, OP_NULL, expr->data.number.token.line);
+      writeChunk(vm->chunk, OP_NULL, expr->data.number.token.line);
       break;
   }
 
   return true;
 }
 
-static bool compileStatement(Chunk* chunk, const Statement* stmt) {
+static bool compileStatement(VM* vm, const Statement* stmt) {
   switch(stmt->type) {
     case STMT_RETURN:
       // compile return statement
@@ -133,7 +133,7 @@ static bool compileStatement(Chunk* chunk, const Statement* stmt) {
       break;
     case STMT_EXPR: {
       Expression expr = stmt->data.expressionStmt.expression;
-      bool result = compileExpression(chunk, &expr);
+      bool result = compileExpression(vm, &expr);
       freeExpression(&expr);
       return result;
     }
@@ -143,10 +143,10 @@ static bool compileStatement(Chunk* chunk, const Statement* stmt) {
   return true;
 }
 
-bool compile(Chunk* chunk, const Statements* statements) {
+bool compile(VM* vm, const Statements* statements) {
   for (int i = 0; i < statements->count; i++) {
     Statement stmt = statements->stmts[i];
-    bool isError = !compileStatement(chunk, &stmt);
+    bool isError = !compileStatement(vm, &stmt);
     if (isError) return false;
   }
   return true;

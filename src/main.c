@@ -105,6 +105,8 @@ int main(int argc, char** argv) {
     fprintf(stderr, "usage: mcscript_vm <path | optional>\n");
     return -1;
   }
+
+  freeVM(&vm);
   
   return 0;
 }

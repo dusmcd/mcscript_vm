@@ -4,6 +4,7 @@
 #include <value.h>
 #include <stdbool.h>
 #include <ast.h>
+#include <vm.h>
 
 #define OBJ_TYPE(value) AS_OBJ(value)->type
 #define IS_STRING(value) isObjType(value, OBJ_STRING)
@@ -24,6 +25,7 @@ typedef enum {
  */
 struct obj {
   ObjType type;
+  Obj* next;
 };
 
 /**
@@ -41,6 +43,6 @@ static inline bool isObjType(Value value, ObjType type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;
 }
 
-Obj* createObject(const Expression* expr, ObjType type);
+Obj* createObject(VM* vm, const Expression* expr, ObjType type);
 
 #endif

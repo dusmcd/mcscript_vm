@@ -15,10 +15,44 @@
 void initVM(VM* vm, Chunk* chunk) {
   vm->chunk = chunk;
   vm->stackTop = vm->valueStack;
+
+  vm->objects = NULL;
 }
 
 void resetVM(VM* vm) {
   vm->stackTop = vm->valueStack;
+}
+
+static void freeObject(Obj* obj) {
+  switch(obj->type) {
+    case OBJ_STRING: {
+      ObjString* str = (ObjString*)obj;
+      FREE_ARRAY(char, str->str, str->length + 1);
+      FREE(ObjString, str);
+      break;
+    }
+  }
+}
+
+static void freeObjects(VM* vm) {
+  Obj* obj = vm->objects;
+  int count = 0;
+
+  while (obj != NULL) {
+    Obj* next = obj->next;
+    freeObject(obj);
+    count++;
+    obj = next;
+  }
+
+#ifdef DEBUG_STACK_TRACE
+  printf("%d objects freed\n", count);
+#endif
+}
+
+
+void freeVM(VM* vm) {
+  freeObjects(vm);
 }
 
 void push(VM* vm, Value val) {
@@ -141,6 +175,9 @@ static bool concatenate(VM* vm) {
   obj->obj.type = OBJ_STRING;
   obj->length = strlen(result);
 
+  obj->obj.next = vm->objects;
+  vm->objects = (Obj*)obj;
+
   push(vm, OBJ_VAL(obj));
 
   return true;
@@ -244,7 +281,7 @@ InterpretResult interpret(VM* vm, const char* source) {
   Parser parser;
   Statements statements = parse(&parser, source);
 
-  if (!compile(vm->chunk, &statements)) {
+  if (!compile(vm, &statements)) {
     freeStatements(&statements);
     return COMPILE_ERROR;
   }
