@@ -1,13 +1,16 @@
-#include "value.h"
+#include <value.h>
 #include <chunk.h>
 #include <common.h>
 #include <vm.h>
+#include <memory.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <debug.h>
 #include <compiler.h>
 #include <parser.h>
+#include <object.h>
+#include <string.h>
 
 void initVM(VM* vm, Chunk* chunk) {
   vm->chunk = chunk;
@@ -75,10 +78,10 @@ static bool binaryOp(VM* vm, ValueType valType, OpCode op) {
     }
     return true;
    }
-
-   default: {
+   
+  default: {
       // handle error
-   }
+  }
  }
 #undef NUM_OP
   return true;
@@ -103,7 +106,43 @@ static bool evalEquals(VM* vm) {
     case VAL_NULL:
       push(vm, BOOL_VAL(true));
       break;
+    case VAL_OBJ:
+      push(vm, BOOL_VAL(strcmp(AS_CSTRING(a), AS_CSTRING(b)) == 0));
+      break;
   }
+  return true;
+}
+
+static bool concatenate(VM* vm) {
+  if (OBJ_TYPE(peek(vm, 1)) != OBJ_STRING && OBJ_TYPE(peek(vm, 2)) != OBJ_STRING) {
+    // handle error
+    return false;
+  }
+
+  ObjString* obj = ALLOCATE(ObjString, 1);
+  if (obj == NULL) {
+    // handle error
+    return false;
+  }
+
+  ObjString* b = AS_STRING(pop(vm));
+  ObjString* a = AS_STRING(pop(vm));
+  int size = a->length + b->length;
+  char* result = ALLOCATE(char, size + 1);
+
+  if (result == NULL) {
+    // handle error
+    return false;
+  }
+
+  char* buff = strcat(a->str, b->str);
+  strcpy(result, buff);
+  obj->str = result;
+  obj->obj.type = OBJ_STRING;
+  obj->length = strlen(result);
+
+  push(vm, OBJ_VAL(obj));
+
   return true;
 }
 
@@ -132,7 +171,10 @@ static InterpretResult run(VM* vm) {
         break;
       }
       case OP_ADD: {
-        if (binaryOp(vm, VAL_NUMBER, OP_ADD)) break;
+        if (peek(vm, 1).type == VAL_OBJ && concatenate(vm)) {
+          break;
+        }
+        else if (binaryOp(vm, VAL_NUMBER, OP_ADD)) break;
         return RUNTIME_ERROR;
       }
       case OP_SUBTRACT: {
