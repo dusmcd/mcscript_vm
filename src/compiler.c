@@ -11,7 +11,11 @@
 
 static bool compileExpression(VM*, Expression*);
 
-static void compilePrefix(VM* vm, Prefix* prefix) {
+static void error(const char* msg, int line) {
+  fprintf(stderr, "[line %d] ERROR: %s\n", line, msg);
+}
+
+static bool compilePrefix(VM* vm, Prefix* prefix) {
   if (prefix->operator == TOKEN_MINUS) {
     compileExpression(vm, prefix->expression);
     writeChunk(vm->chunk, OP_NEGATE, prefix->token.line);
@@ -20,12 +24,20 @@ static void compilePrefix(VM* vm, Prefix* prefix) {
     writeChunk(vm->chunk, OP_NOT, prefix->token.line);
   } else {
     // handle error
+    int line = prefix->token.line;
+    char buff[256];
+    snprintf(buff, sizeof(buff), "%d operator cannot be used as prefix operator",
+        prefix->token.type);
+    error(buff, line);
+    return false;
   }
+
+  return true;
 }
 
-static void compileInfix(VM* vm, Infix* infix) {
-  compileExpression(vm, infix->left);
-  compileExpression(vm, infix->right);
+static bool compileInfix(VM* vm, Infix* infix) {
+  if (!compileExpression(vm, infix->left)) return false;
+  if (!compileExpression(vm, infix->right)) return false;
 
   switch(infix->operator) {
     case TOKEN_PLUS: {
@@ -64,8 +76,15 @@ static void compileInfix(VM* vm, Infix* infix) {
       break;
     default: {
       // handle error
+      char buff[256];
+      snprintf(buff, sizeof(buff), "%d is not a binary operator\n",
+          infix->token.type);
+      error(buff, infix->token.line);
+      return false;
     }
   }
+
+  return true;
 }
 
 static void writeConstant(Chunk* chunk, Value val, int line) {
@@ -78,17 +97,17 @@ static bool compileExpression(VM* vm, Expression* expr) {
   switch(expr->type) {
     case EXPR_PREFIX: {
       Prefix prefix = expr->data.prefix;
-      compilePrefix(vm, &prefix);
-      break;
+      if (compilePrefix(vm, &prefix)) break;
+      return false;
     case EXPR_INFIX: {
       Infix infix = expr->data.infix;
-      compileInfix(vm, &infix);
-      break;
+      if (compileInfix(vm, &infix)) break;
+      return false;
     }
     case EXPR_GROUP: {
       Group group = expr->data.group;
-      compileExpression(vm, group.expr);
-      break;
+      if (compileExpression(vm, group.expr)) break;
+      return false;
     }
     case EXPR_NUMBER: {
       Number number = expr->data.number;

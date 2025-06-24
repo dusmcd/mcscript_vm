@@ -55,6 +55,10 @@ void freeVM(VM* vm) {
   freeObjects(vm);
 }
 
+static void error(const char* msg, int line) {
+  fprintf(stderr, "[line %d] ERROR: %s\n", line, msg);
+}
+
 void push(VM* vm, Value val) {
   *(vm->stackTop) = val;
   vm->stackTop++;
@@ -86,6 +90,7 @@ static bool binaryOp(VM* vm, ValueType valType, OpCode op) {
   switch(valType) {
     case VAL_NUMBER: {
       if (peek(vm, 1).type != VAL_NUMBER || peek(vm, 2).type != VAL_NUMBER) {
+          error("both operands must be number types", 1);
           return false;
       }
 
@@ -96,25 +101,37 @@ static bool binaryOp(VM* vm, ValueType valType, OpCode op) {
         case OP_SUBTRACT: NUM_OP(-, NUMBER_VAL, double); break;
         case OP_MULTIPLY: NUM_OP(*, NUMBER_VAL, double); break;
         case OP_DIVIDE: NUM_OP(/, NUMBER_VAL, double); break;
-        default: return false;
+        default: {
+          error("operand not supported for binary operation", 1);
+          return false;
+        }
       } 
       return true;
     }
 
    case VAL_BOOL: {
     if (peek(vm, 1).type != VAL_NUMBER || peek(vm, 2).type != VAL_NUMBER) {
+      error("both operands must be number types", 1);
       return false;
     }
     switch(op) {
       case OP_LESS: NUM_OP(<, BOOL_VAL, bool); break;
       case OP_GREATER: NUM_OP(>, BOOL_VAL, bool); break;
-      default: return false;
+      default:{
+        error("operand not supported for comparison", 1);
+        return false;
+      } 
     }
     return true;
    }
    
   default: {
-      // handle error
+    // handle error
+    char buff[100];
+    snprintf(buff, sizeof(buff), "value type %d not supported as binary operand\n", 
+        valType);
+    error(buff, 1);
+    return false;
   }
  }
 #undef NUM_OP
@@ -148,14 +165,20 @@ static bool evalEquals(VM* vm) {
 }
 
 static bool concatenate(VM* vm) {
+  if (!(IS_OBJ(peek(vm, 1))) || !(IS_OBJ(peek(vm, 2)))) {
+    error("both types must be objects", 1);
+    return false;
+  }
   if (OBJ_TYPE(peek(vm, 1)) != OBJ_STRING && OBJ_TYPE(peek(vm, 2)) != OBJ_STRING) {
     // handle error
+    error("both types must by strings", 1);
     return false;
   }
 
   ObjString* obj = ALLOCATE(ObjString, 1);
   if (obj == NULL) {
     // handle error
+    error("insufficient memory", 1);
     return false;
   }
 
@@ -166,6 +189,7 @@ static bool concatenate(VM* vm) {
 
   if (result == NULL) {
     // handle error
+    error("insufficient memory", 1);
     return false;
   }
 
@@ -208,10 +232,12 @@ static InterpretResult run(VM* vm) {
         break;
       }
       case OP_ADD: {
-        if (peek(vm, 1).type == VAL_OBJ && concatenate(vm)) {
-          break;
+        if (peek(vm, 1).type == VAL_OBJ ) {
+          if (concatenate(vm)) break;
+          return RUNTIME_ERROR;
         }
-        else if (binaryOp(vm, VAL_NUMBER, OP_ADD)) break;
+
+        if (binaryOp(vm, VAL_NUMBER, OP_ADD)) break;
         return RUNTIME_ERROR;
       }
       case OP_SUBTRACT: {

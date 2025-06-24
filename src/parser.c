@@ -46,7 +46,8 @@ const ParserRule rules[] = {
   [TOKEN_GREATER_EQUAL] = {NULL, binary, PREC_COMPARISON},
   [TOKEN_BANG_EQUAL] = {NULL, binary, PREC_EQUALITY},
   [TOKEN_LESS_EQUAL] = {NULL, binary, PREC_COMPARISON},
-  [TOKEN_STRING] = {string, NULL, PREC_NONE}
+  [TOKEN_STRING] = {string, NULL, PREC_NONE},
+  [TOKEN_ILLEGAL] = {NULL, NULL, PREC_NONE}
 };
 
 static ParserRule getRule(TokenType type) {
