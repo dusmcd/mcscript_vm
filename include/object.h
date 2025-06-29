@@ -37,6 +37,7 @@ struct objString {
   Obj obj;
   int length;
   char* str;
+  uint32_t hash;
 };
 
 static inline bool isObjType(Value value, ObjType type) {

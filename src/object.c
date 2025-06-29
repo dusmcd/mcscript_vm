@@ -3,6 +3,17 @@
 #include <memory.h>
 #include <string.h>
 
+static uint32_t hashString(const char* key, int length) {
+  // this is a hash function
+  uint32_t hash = 2166136261u;
+  for (int i = 0; i < length; i++) {
+    hash ^= (uint8_t)key[i];
+    hash *= 16777619;
+  }
+
+  return hash;
+}
+
 static Obj* createString(const Expression* expr) {
   if (expr->type != EXPR_STRING) {
     return NULL;
@@ -28,6 +39,7 @@ static Obj* createString(const Expression* expr) {
 
   chars[str->length] = '\0';
   str->str = chars;
+  str->hash = hashString(chars, str->length);
 
   return (Obj*)str;
 }
