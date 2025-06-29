@@ -45,5 +45,6 @@ static inline bool isObjType(Value value, ObjType type) {
 }
 
 Obj* createObject(VM* vm, const Expression* expr, ObjType type);
+uint32_t hashString(const char* key, int length);
 
 #endif

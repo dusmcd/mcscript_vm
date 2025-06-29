@@ -198,6 +198,7 @@ static bool concatenate(VM* vm) {
   obj->str = result;
   obj->obj.type = OBJ_STRING;
   obj->length = strlen(result);
+  obj->hash = hashString(obj->str, obj->length);
 
   obj->obj.next = vm->objects;
   vm->objects = (Obj*)obj;

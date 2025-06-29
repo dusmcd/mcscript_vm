@@ -3,7 +3,7 @@
 #include <memory.h>
 #include <string.h>
 
-static uint32_t hashString(const char* key, int length) {
+uint32_t hashString(const char* key, int length) {
   // this is a hash function
   uint32_t hash = 2166136261u;
   for (int i = 0; i < length; i++) {
