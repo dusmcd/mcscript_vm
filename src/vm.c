@@ -175,34 +175,12 @@ static bool concatenate(VM* vm) {
     return false;
   }
 
-  ObjString* obj = ALLOCATE(ObjString, 1);
-  if (obj == NULL) {
-    // handle error
-    error("insufficient memory");
-    return false;
-  }
-
   ObjString* b = AS_STRING(pop(vm));
   ObjString* a = AS_STRING(pop(vm));
   int size = a->length + b->length;
-  char* result = ALLOCATE(char, size + 1);
-
-  if (result == NULL) {
-    // handle error
-    error("insufficient memory");
-    return false;
-  }
 
   char* buff = strcat(a->str, b->str);
-  strcpy(result, buff);
-  obj->str = result;
-  obj->obj.type = OBJ_STRING;
-  obj->length = strlen(result);
-  obj->hash = hashString(obj->str, obj->length);
-
-  obj->obj.next = vm->objects;
-  vm->objects = (Obj*)obj;
-
+  ObjString* obj = allocateString(vm, buff);
   push(vm, OBJ_VAL(obj));
 
   return true;

@@ -116,10 +116,14 @@ static bool compileExpression(VM* vm, Expression* expr) {
       break;
     }
     case EXPR_STRING: {
-      Obj* obj = createObject(vm, expr, OBJ_STRING);
+      const char* str = createString(expr);
+      Obj* obj = (Obj*)allocateString(vm, str);
       if (obj == NULL) {
         return false;
       }
+
+      free((char*)str);
+      str = NULL;
       Value val = OBJ_VAL(obj);
       writeConstant(vm->chunk, val, expr->data.string.token.line);
       break;

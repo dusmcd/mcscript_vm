@@ -14,53 +14,53 @@ uint32_t hashString(const char* key, int length) {
   return hash;
 }
 
-static Obj* createString(const Expression* expr) {
+static void trackObject(VM* vm, Obj* obj) {
+  obj->next = vm->objects;
+  vm->objects = obj;
+}
+
+ObjString* allocateString(VM* vm, const char* buff) {
+  ObjString* obj = ALLOCATE(ObjString, 1);
+  if (obj == NULL) {
+    return NULL;
+  }
+  
+  int length = strlen(buff);
+  char* str = ALLOCATE(char, length + 1);
+  if (str == NULL) {
+    return NULL;
+  }
+  strcpy(str, buff);
+
+  obj->obj.type = OBJ_STRING;
+  obj->length = length;
+  obj->str = str;
+  obj->hash = hashString(str, obj->length);
+
+  trackObject(vm, (Obj*)obj);
+
+  return obj;
+}
+
+
+
+const char* createString(const Expression* expr) {
   if (expr->type != EXPR_STRING) {
     return NULL;
   }
 
-  ObjString* str = ALLOCATE(ObjString, 1);
-
-  if (str == NULL) {
-    return NULL;
-  }
-
-  str->obj.type = OBJ_STRING;
   String stringExpr = expr->data.string;
 
   // not including quotation marks in value
-  str->length = stringExpr.token.length - 2;
-  char* chars = ALLOCATE(char, str->length + 1);
+  int length = stringExpr.token.length - 2;
+  char* chars = ALLOCATE(char, length + 1);
   if (chars == NULL) {
     return NULL;
   }
 
-  memcpy(chars, stringExpr.token.start + 1, str->length);
+  memcpy(chars, stringExpr.token.start + 1, length);
+  chars[length] = '\0';
 
-  chars[str->length] = '\0';
-  str->str = chars;
-  str->hash = hashString(chars, str->length);
-
-  return (Obj*)str;
+  return chars;
 }
 
-
-Obj* createObject(VM* vm, const Expression* expr, ObjType type) {
-  // when the garbage collector is implemented this is where
-  // the object tracking would start
-  Obj* obj;
-  
-  switch(type) {
-    case OBJ_STRING: {
-      obj = createString(expr);
-      break;
-    }
-    default:
-      return NULL;
-  }
-
-  obj->next = vm->objects;
-  vm->objects = obj;
-
-  return obj;
-}

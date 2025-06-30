@@ -68,6 +68,8 @@ static void adjustCapacity(Table* table) {
     dest->value = entry->value;
   }
 
+  FREE_ARRAY(Entry, table->entries, 0);
+
   table->entries = entries;
 }
 
@@ -82,9 +84,11 @@ bool tableSet(Table* table, ObjString* key, Value value) {
   bool isNewKey = entry->key == NULL;
 
   if (isNewKey) {
-    entry->key = key;
-    entry->value = value;
+    table->count++;
   }
+  entry->key = key;
+  entry->value = value;
+
 
   return isNewKey;
 }

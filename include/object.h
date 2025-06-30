@@ -44,7 +44,19 @@ static inline bool isObjType(Value value, ObjType type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;
 }
 
-Obj* createObject(VM* vm, const Expression* expr, ObjType type);
+/**
+ * wrap strings as objects on the heap and track in vm
+ */
+ObjString* allocateString(VM* vm, const char* str);
+
+/**
+ * create a string from an AST Expression
+ */
+const char* createString(const Expression* expr);
+
+/**
+ * hash function for a string
+ */
 uint32_t hashString(const char* key, int length);
 
 #endif
