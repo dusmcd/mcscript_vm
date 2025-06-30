@@ -51,6 +51,9 @@ ObjString* allocateString(VM* vm, const char* str);
 
 /**
  * create a string from an AST Expression
+ * allocates char array on heap
+ * don't forget to free it if passing to allocateString and
+ * not using again
  */
 const char* createString(const Expression* expr);
 

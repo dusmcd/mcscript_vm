@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <object.h>
+#include <string.h>
 
 #define TABLE_MAX_LOAD 0.75
 
@@ -17,6 +18,20 @@ void freeTable(Table* table) {
   FREE_ARRAY(Table, table->entries, table->capacity);
   initTable(table);
 }
+
+void tableAddAll(Table* to, Table* from) {
+  for (int i = 0; i < from->capacity; i++) {
+    Entry* entry = &from->entries[i];
+    if (entry->key != NULL) {
+      tableSet(to, entry->key, entry->value);
+    }
+  }
+}
+
+static inline bool keysEqual(const ObjString* a, const ObjString* b) {
+  return strcmp(a->str, b->str) == 0;
+}
+
 
 
 /**
@@ -33,12 +48,24 @@ static Entry* findEntry(Entry* entries, ObjString* key, int capacity) {
    */
   while(true) {
     Entry* entry = &entries[index];
-    if (entry->key == key || entry->key == NULL) {
+    if (entry->key == NULL || keysEqual(entry->key, key)) {
       return entry;
     }
     index = (index + 1) % capacity;
   }
 }
+
+bool tableGet(Table* table, ObjString* key, Value* value) {
+  if (table->count == 0) return false;
+
+  Entry* entry = findEntry(table->entries, key, table->capacity);
+  if (entry->key == NULL) return false;
+
+  *value = entry->value;
+
+  return true;
+}
+
 
 /**
  * create an array of entries will null values
@@ -54,28 +81,30 @@ static void adjustCapacity(Table* table) {
    * copying over old table to new table with
    * increased capacity
    */
-  for (int i = 0; i < table->capacity; i++) {
-    Entry* entry = &table->entries[i];
-    if (entry->key == NULL) continue;
+  if (table->count > 0) {
+    for (int i = 0; i < table->capacity; i++) {
+      Entry* entry = &table->entries[i];
+      if (entry->key == NULL) continue;
 
-    /**
-     * this retrieves the pointer to the new entry in the
-     * new table. This will always return a null entry
-     */
-    Entry* dest = findEntry(entries, entry->key, table->capacity);
+      /**
+       * this retrieves the pointer to the new entry in the
+       * new table. This will always return a null entry
+       */
+      Entry* dest = findEntry(entries, entry->key, table->capacity);
 
-    dest->key = entry->key;
-    dest->value = entry->value;
+      dest->key = entry->key;
+      dest->value = entry->value;
+    }
+
+    FREE_ARRAY(Entry, table->entries, 0);
   }
-
-  FREE_ARRAY(Entry, table->entries, 0);
-
+  
   table->entries = entries;
 }
 
 
 bool tableSet(Table* table, ObjString* key, Value value) {
-  if (table->count + 1 < table->capacity * TABLE_MAX_LOAD) {
+  if (table->count + 1 > table->capacity * TABLE_MAX_LOAD) {
     table->capacity = GROW_CAPACITY(table->capacity);
     adjustCapacity(table);
   }

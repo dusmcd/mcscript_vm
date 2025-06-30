@@ -22,5 +22,16 @@ void freeTable(Table* table);
  */
 bool tableSet(Table* table, ObjString* key, Value value);
 
+/**
+ * get a value associated with a key
+ * the value will be inserted to value passed in
+ */
+bool tableGet(Table* table, ObjString* key, Value* value);
+
+/**
+ * copy all the entries in "from" to "to"
+ */
+void tableAddAll(Table* to, Table* from);
+
 
 #endif
