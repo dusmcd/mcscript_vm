@@ -16,6 +16,7 @@
 #define IS_BOOL(value) value.type == VAL_BOOL
 #define IS_NULL(value) value.type == VAL_NULL
 #define IS_OBJ(value) value.type == VAL_OBJ
+#define IS_NUM(value) value.type == VAL_NUMBER
 
 typedef struct obj Obj;
 typedef struct objString ObjString;
