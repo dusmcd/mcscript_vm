@@ -90,8 +90,43 @@ static void testGetTable() {
   puts("testGetTable() passed");
 }
 
+static void testDeleteTable() {
+  TableTest test = {
+    .count = 2,
+    .keys = {"height", "age"},
+    .vals = {NUMBER_VAL(60), NUMBER_VAL(36)}
+  };
+  
+  Table table;
+  initTable(&table);
+
+  for (int i = 0; i < test.count; i++) {
+    char* str = (char*)test.keys[i];
+    ObjString key = createKey(str);
+    Value val = test.vals[i];
+    tableSet(&table, &key, val);
+
+    bool success = tableDelete(&table, &key);
+    if (!success) {
+      fprintf(stderr, "%s was not sucessfully deleted\n", str);
+      return;
+    }
+    Value emptyVal;
+    bool found = tableGet(&table, &key, &emptyVal);
+
+    if (found) {
+      fprintf(stderr,"%s key was found after deletion\n", str);
+      return;
+    }
+  }
+  freeTable(&table);
+  puts("testDeleteTable() passed");
+
+}
+
 void testTable() {
   printf("=== Hash Table Tests ===\n");
   testSetTable();
   testGetTable();
+  testDeleteTable();
 }
