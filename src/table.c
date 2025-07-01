@@ -41,6 +41,7 @@ static inline bool keysEqual(const ObjString* a, const ObjString* b) {
  */
 static Entry* findEntry(Entry* entries, ObjString* key, int capacity) {
   uint32_t index = key->hash % capacity;
+  Entry* tombstone = NULL;
 
   /**
    * check for collisions and increase index linearly
@@ -48,11 +49,34 @@ static Entry* findEntry(Entry* entries, ObjString* key, int capacity) {
    */
   while(true) {
     Entry* entry = &entries[index];
-    if (entry->key == NULL || keysEqual(entry->key, key)) {
+    if (entry->key == NULL) {
+      if (IS_NULL(entry->value)) {
+        // not a tombstone
+        return tombstone != NULL ? tombstone : entry;
+      } else {
+        // found a tombstone
+        if (tombstone == NULL) tombstone = entry;
+      }
+    }
+    else if (keysEqual(entry->key, key)) {
       return entry;
     }
     index = (index + 1) % capacity;
   }
+}
+
+bool tableDelete(Table* table, ObjString* key) {
+  if (key == NULL) return false;
+
+  Entry* entry = findEntry(table->entries, key, table->capacity);
+  if (entry->key == NULL) return false;
+
+  // turning entry into a "tombstone" entry
+  // essentially a soft delete
+  entry->key = NULL;
+  entry->value = BOOL_VAL(true);
+
+  return true;
 }
 
 bool tableGet(Table* table, ObjString* key, Value* value) {
@@ -82,6 +106,7 @@ static void adjustCapacity(Table* table) {
    * increased capacity
    */
   if (table->count > 0) {
+    table->count = 0;
     for (int i = 0; i < table->capacity; i++) {
       Entry* entry = &table->entries[i];
       if (entry->key == NULL) continue;
@@ -94,6 +119,7 @@ static void adjustCapacity(Table* table) {
 
       dest->key = entry->key;
       dest->value = entry->value;
+      table->count++;
     }
 
     FREE_ARRAY(Entry, table->entries, 0);
@@ -112,7 +138,7 @@ bool tableSet(Table* table, ObjString* key, Value value) {
   Entry* entry = findEntry(table->entries, key, table->capacity);
   bool isNewKey = entry->key == NULL;
 
-  if (isNewKey) {
+  if (isNewKey || IS_NULL(entry->value)) {
     table->count++;
   }
   entry->key = key;
