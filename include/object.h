@@ -47,7 +47,7 @@ static inline bool isObjType(Value value, ObjType type) {
 /**
  * wrap strings as objects on the heap and track in vm
  */
-ObjString* allocateString(VM* vm, const char* str);
+ObjString* allocateString(VM* vm, char* str);
 
 /**
  * create a string from an AST Expression
@@ -55,7 +55,7 @@ ObjString* allocateString(VM* vm, const char* str);
  * don't forget to free it if passing to allocateString and
  * not using again
  */
-const char* createString(const Expression* expr);
+char* createString(const Expression* expr);
 
 /**
  * hash function for a string

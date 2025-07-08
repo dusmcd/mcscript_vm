@@ -126,14 +126,12 @@ static bool compileExpression(VM* vm, Expression* expr) {
       break;
     }
     case EXPR_STRING: {
-      const char* str = createString(expr);
+      char* str = createString(expr);
       Obj* obj = (Obj*)allocateString(vm, str);
       if (obj == NULL) {
+        free(str);
         return false;
       }
-
-      free((char*)str);
-      str = NULL;
       Value val = OBJ_VAL(obj);
       writeConstant(vm->chunk, val, expr->data.string.token.line);
       break;
@@ -146,9 +144,6 @@ static bool compileExpression(VM* vm, Expression* expr) {
         free(name);
         return false;
       }
-
-      free(name);
-      name = NULL;
       Value val = OBJ_VAL(obj);
       writeConstant(vm->chunk, val, ident.token.line);
 
@@ -178,8 +173,6 @@ static bool compileVarStatement(VM* vm, const Statement* stmt) {
   char* name = createName(&ident);
 
   Obj* obj = (Obj*)allocateString(vm, name);
-  free(name);
-  name = NULL;
   Value val = OBJ_VAL(obj);
   writeConstant(vm->chunk, val, stmt->data.varStmt.token.line);
 

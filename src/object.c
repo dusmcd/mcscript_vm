@@ -19,23 +19,18 @@ static void trackObject(VM* vm, Obj* obj) {
   vm->objects = obj;
 }
 
-ObjString* allocateString(VM* vm, const char* buff) {
+ObjString* allocateString(VM* vm, char* buff) {
   ObjString* obj = ALLOCATE(ObjString, 1);
   if (obj == NULL) {
     return NULL;
   }
   
   int length = strlen(buff);
-  char* str = ALLOCATE(char, length + 1);
-  if (str == NULL) {
-    return NULL;
-  }
-  strcpy(str, buff);
 
   obj->obj.type = OBJ_STRING;
   obj->length = length;
-  obj->str = str;
-  obj->hash = hashString(str, obj->length);
+  obj->str = buff;
+  obj->hash = hashString(buff, obj->length);
 
   trackObject(vm, (Obj*)obj);
 
@@ -44,7 +39,7 @@ ObjString* allocateString(VM* vm, const char* buff) {
 
 
 
-const char* createString(const Expression* expr) {
+char* createString(const Expression* expr) {
   if (expr->type != EXPR_STRING) {
     return NULL;
   }

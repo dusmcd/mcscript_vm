@@ -174,7 +174,7 @@ static bool concatenate(VM* vm) {
   }
   if (OBJ_TYPE(peek(vm, 1)) != OBJ_STRING && OBJ_TYPE(peek(vm, 2)) != OBJ_STRING) {
     // handle error
-    error("both types must by strings");
+    error("both types must be strings");
     return false;
   }
 
@@ -183,7 +183,9 @@ static bool concatenate(VM* vm) {
   int size = a->length + b->length;
 
   char* buff = strcat(a->str, b->str);
-  ObjString* obj = allocateString(vm, buff);
+  char* str = ALLOCATE(char, size + 1);
+  strcpy(str, buff);
+  ObjString* obj = allocateString(vm, str);
   push(vm, OBJ_VAL(obj));
 
   return true;
