@@ -1,3 +1,4 @@
+#include <memory.h>
 #include <ast.h>
 #include <value.h>
 #include <compiler.h>
@@ -8,6 +9,7 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <object.h>
+#include <string.h>
 
 static bool compileExpression(VM*, Expression*);
 
@@ -146,14 +148,35 @@ static bool compileExpression(VM* vm, Expression* expr) {
   return true;
 }
 
+static bool compileVarStatement(VM* vm, const Statement* stmt) {
+  Identifier ident = stmt->data.varStmt.name;
+  char* name = ALLOCATE(char, ident.length + 1);
+  memcpy(name, ident.start, ident.length);
+  name[ident.length] = '\0';
+
+  Obj* obj = (Obj*)allocateString(vm, name);
+  free(name);
+  name = NULL;
+  Value val = OBJ_VAL(obj);
+  writeConstant(vm->chunk, val, stmt->data.varStmt.token.line);
+
+  Expression expr = stmt->data.varStmt.value;
+  if (!compileExpression(vm, &expr)) {
+    return false;
+  }
+
+
+  writeChunk(vm->chunk, OP_DEFINE_GLOBAL, stmt->data.varStmt.token.line);
+  return true;
+}
+
 static bool compileStatement(VM* vm, const Statement* stmt) {
   switch(stmt->type) {
     case STMT_RETURN:
       // compile return statement
       break;
     case STMT_VAR:
-      // compile var statement
-      break;
+      return compileVarStatement(vm, stmt);
     case STMT_EXPR: {
       Expression expr = stmt->data.expressionStmt.expression;
       bool result = compileExpression(vm, &expr);

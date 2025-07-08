@@ -11,12 +11,14 @@
 #include <parser.h>
 #include <object.h>
 #include <string.h>
+#include <table.h>
 
 void initVM(VM* vm, Chunk* chunk) {
   vm->chunk = chunk;
   vm->stackTop = vm->valueStack;
 
   vm->objects = NULL;
+  initTable(&vm->globals);
 }
 
 void resetVM(VM* vm) {
@@ -53,6 +55,7 @@ static void freeObjects(VM* vm) {
 
 void freeVM(VM* vm) {
   freeObjects(vm);
+  freeTable(&vm->globals);
 }
 
 static void error(const char* msg) {
@@ -270,9 +273,19 @@ static InterpretResult run(VM* vm) {
         push(vm, val);
         break;
       }
+      case OP_DEFINE_GLOBAL: {
+        ObjString* name = AS_STRING(peek(vm, 2));
+        Value val = peek(vm, 1);
+        tableSet(&vm->globals, name, val);
+        pop(vm);
+        pop(vm);
+        break;
+      }
       case OP_RETURN:
-        printValue(pop(vm));
-        printf("\n");
+        if (vm->stackTop > vm->valueStack) {
+          printValue(pop(vm));
+          printf("\n");
+        }
         return INTERPRET_OK;
     }
   }

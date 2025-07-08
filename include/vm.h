@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <chunk.h>
 #include <value.h>
+#include <table.h>
 
 #define STACK_MAX 256
 
@@ -24,6 +25,7 @@ typedef struct {
   Value* stackTop;
   Chunk* chunk;
   Obj* objects;
+  Table globals;
 } VM;
 
 typedef enum {
