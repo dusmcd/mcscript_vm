@@ -25,6 +25,7 @@ typedef enum {
   OP_GREATER,
   OP_EQUAL,
   OP_DEFINE_GLOBAL,
+  OP_GET_GLOBAL,
   OP_NULL,
   OP_RETURN // return instruction (i.e., pop function off stack and return to next instruction)
 } OpCode;

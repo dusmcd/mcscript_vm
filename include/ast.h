@@ -24,6 +24,7 @@ typedef enum {
   EXPR_GROUP,
   EXPR_BOOL,
   EXPR_STRING,
+  EXPR_IDENT,
   EXPR_ERROR,
   EXPR_NULL
 } ExpressionType;
@@ -66,6 +67,11 @@ typedef struct {
   Token token;
 } String;
 
+typedef struct {
+  int length;
+  Token token;
+  const char* start;
+} Identifier;
 
 /**
  * all the structures for different expression types
@@ -77,6 +83,7 @@ typedef union {
   Group group; // => EXPR_GROUP
   Boolean boolean; // => EXPR_BOOL
   String string; // => EXPR_STRING
+  Identifier identifier; // => EXPR_IDENT
 } ExpressionData;
 
 /**
@@ -92,10 +99,6 @@ typedef struct {
   Expression expression;
 } ReturnStatement;
 
-typedef struct {
-  int length;
-  const char* start;
-} Identifier;
 
 typedef struct {
   Token token;

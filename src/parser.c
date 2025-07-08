@@ -11,6 +11,7 @@ static Expression parseExpression(Parser*, Scanner*, Precedence);
 static Expression grouped(Parser*, Scanner*);
 static bool expect(Parser*, Scanner*, TokenType);
 static Expression boolean(Parser*, Scanner*);
+static Expression identifier(Parser*, Scanner*);
 
 static void error(Parser* parser, const char* msg) {
   fprintf(stderr, "[line %d]: Error: %s\n", parser->previous.line, msg);
@@ -24,6 +25,17 @@ static void advance(Parser* parser, Scanner* scanner) {
 static Expression string(Parser* parser, Scanner* scanner) {
   String string = {.token = parser->previous};
   Expression expr = {.data = {.string = string}, .type = EXPR_STRING};
+
+  return expr;
+}
+
+static Expression identifier(Parser* parser, Scanner* scanner) {
+  Identifier ident = {
+    .length = parser->previous.length,
+    .start = parser->previous.start,
+    .token = parser->previous
+  };
+  Expression expr = {.data = {.identifier = ident}, .type = EXPR_IDENT};
 
   return expr;
 }
@@ -47,6 +59,7 @@ const ParserRule rules[] = {
   [TOKEN_BANG_EQUAL] = {NULL, binary, PREC_EQUALITY},
   [TOKEN_LESS_EQUAL] = {NULL, binary, PREC_COMPARISON},
   [TOKEN_STRING] = {string, NULL, PREC_NONE},
+  [TOKEN_IDENTIFIER] = {identifier, NULL, PREC_NONE},
   [TOKEN_ILLEGAL] = {NULL, NULL, PREC_NONE}
 };
 

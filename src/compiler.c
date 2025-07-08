@@ -95,6 +95,14 @@ static void writeConstant(Chunk* chunk, Value val, int line) {
   writeChunk(chunk, i, line);
 }
 
+static char* createName(const Identifier* ident) {
+  char* name = ALLOCATE(char, ident->length + 1);
+  memcpy(name, ident->start, ident->length);
+  name[ident->length] = '\0';
+
+  return name;
+}
+
 static bool compileExpression(VM* vm, Expression* expr) {
   switch(expr->type) {
     case EXPR_PREFIX: {
@@ -130,6 +138,23 @@ static bool compileExpression(VM* vm, Expression* expr) {
       writeConstant(vm->chunk, val, expr->data.string.token.line);
       break;
     }
+    case EXPR_IDENT: {
+      Identifier ident = expr->data.identifier;
+      char* name = createName(&ident);
+      Obj* obj = (Obj*)allocateString(vm, name);
+      if (obj == NULL) {
+        free(name);
+        return false;
+      }
+
+      free(name);
+      name = NULL;
+      Value val = OBJ_VAL(obj);
+      writeConstant(vm->chunk, val, ident.token.line);
+
+      writeChunk(vm->chunk, OP_GET_GLOBAL, ident.token.line);
+      break;
+    }
     case EXPR_ERROR:
       return false;
     }
@@ -150,9 +175,7 @@ static bool compileExpression(VM* vm, Expression* expr) {
 
 static bool compileVarStatement(VM* vm, const Statement* stmt) {
   Identifier ident = stmt->data.varStmt.name;
-  char* name = ALLOCATE(char, ident.length + 1);
-  memcpy(name, ident.start, ident.length);
-  name[ident.length] = '\0';
+  char* name = createName(&ident);
 
   Obj* obj = (Obj*)allocateString(vm, name);
   free(name);

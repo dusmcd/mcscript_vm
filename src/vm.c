@@ -281,6 +281,18 @@ static InterpretResult run(VM* vm) {
         pop(vm);
         break;
       }
+      case OP_GET_GLOBAL: {
+        ObjString* name = AS_STRING(peek(vm, 1));
+        Value val;
+        bool found = tableGet(&vm->globals, name, &val);
+        if (!found) {
+          error("undefined identifier");
+          return RUNTIME_ERROR;
+        }
+        pop(vm);
+        push(vm, val);
+        break;
+      }
       case OP_RETURN:
         if (vm->stackTop > vm->valueStack) {
           printValue(pop(vm));
