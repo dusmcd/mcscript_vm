@@ -31,7 +31,7 @@ struct Compiler {
  * compile the source code into bytecode instructions
  * and store them in chunk
  */
-bool compile(VM* vm, const Statements* statements, Compiler* compiler);
+bool compile(VM* vm, const Statements* statements);
 void initCompiler(Compiler* compiler);
 
 #endif

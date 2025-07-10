@@ -62,7 +62,7 @@ static void repl(VM* vm, Compiler* compiler) {
       break;
     }
 
-    InterpretResult result = interpret(vm, line, compiler);
+    InterpretResult result = interpret(vm, line);
     freeChunk(vm->chunk);
     resetVM(vm);
     if (result == COMPILE_ERROR) {
@@ -80,18 +80,18 @@ int main(int argc, char** argv) {
   Chunk chunk;
   initChunk(&chunk);
 
-  VM vm;
-  initVM(&vm, &chunk);
-
   Compiler compiler;
   initCompiler(&compiler);
 
+  VM vm;
+  initVM(&vm, &chunk, &compiler);
+  
   if (argc == 1) {
     // run repl
     repl(&vm, &compiler);
   } else if (argc == 2) {
     const char* source = readFile(argv[1]);
-    InterpretResult result = interpret(&vm, source, &compiler);
+    InterpretResult result = interpret(&vm, source);
     free((char*)source);
     source = NULL;
     freeChunk(&chunk);

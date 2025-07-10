@@ -12,7 +12,7 @@
 #include <string.h>
 
 static bool compileExpression(VM*, Expression*);
-static bool compileStatement(VM* vm, const Statement* stmt, Compiler* compiler);
+static bool compileStatement(VM* vm, const Statement* stmt);
 
 static void error(const char* msg, int line) {
   fprintf(stderr, "[line %d] ERROR: %s\n", line, msg);
@@ -187,8 +187,8 @@ static bool compileVarStatement(VM* vm, const Statement* stmt) {
   return true;
 }
 
-static bool compileBlockStatement(VM* vm, const Statement* stmt, Compiler* compiler) {
-  compiler->scopeDepth++;
+static bool compileBlockStatement(VM* vm, const Statement* stmt) {
+  vm->compiler->scopeDepth++;
   Statements stmts = stmt->data.blockStmt.stmts;
 
   for (int i = 0; i < stmts.count; i++) {
@@ -196,14 +196,14 @@ static bool compileBlockStatement(VM* vm, const Statement* stmt, Compiler* compi
     if (inner.type == STMT_VAR) {
       // create local variable
     } else {
-      if (!compileStatement(vm, &inner, compiler)) return false;
+      if (!compileStatement(vm, &inner)) return false;
     }
   }
-  compiler->scopeDepth--;
+  vm->compiler->scopeDepth--;
   return true;
 }
 
-static bool compileStatement(VM* vm, const Statement* stmt, Compiler* compiler) {
+static bool compileStatement(VM* vm, const Statement* stmt) {
   switch(stmt->type) {
     case STMT_RETURN:
       // compile return statement
@@ -218,7 +218,7 @@ static bool compileStatement(VM* vm, const Statement* stmt, Compiler* compiler) 
     }
     case STMT_BLOCK: {
       // compile block statement
-      return compileBlockStatement(vm, stmt, compiler);
+      return compileBlockStatement(vm, stmt);
     }
     case STMT_NULL:
       return true;
@@ -226,10 +226,10 @@ static bool compileStatement(VM* vm, const Statement* stmt, Compiler* compiler) 
   return true;
 }
 
-bool compile(VM* vm, const Statements* statements, Compiler* compiler) {
+bool compile(VM* vm, const Statements* statements) {
   for (int i = 0; i < statements->count; i++) {
     Statement stmt = statements->stmts[i];
-    bool isError = !compileStatement(vm, &stmt, compiler);
+    bool isError = !compileStatement(vm, &stmt);
     if (isError) return false;
   }
   return true;

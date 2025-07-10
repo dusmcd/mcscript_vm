@@ -13,11 +13,12 @@
 #include <string.h>
 #include <table.h>
 
-void initVM(VM* vm, Chunk* chunk) {
+void initVM(VM* vm, Chunk* chunk, Compiler* compiler) {
   vm->chunk = chunk;
   vm->stackTop = vm->valueStack;
 
   vm->objects = NULL;
+  vm->compiler = compiler;
   initTable(&vm->globals);
 }
 
@@ -309,11 +310,11 @@ static InterpretResult run(VM* vm) {
 }
 
 
-InterpretResult interpret(VM* vm, const char* source, Compiler* compiler) {
+InterpretResult interpret(VM* vm, const char* source) {
   Parser parser;
   Statements statements = parse(&parser, source);
 
-  if (!compile(vm, &statements, compiler)) {
+  if (!compile(vm, &statements)) {
     freeStatements(&statements);
     return COMPILE_ERROR;
   }

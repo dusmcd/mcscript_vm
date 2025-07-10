@@ -28,6 +28,7 @@ typedef struct {
   Chunk* chunk;
   Obj* objects;
   Table globals;
+  Compiler* compiler;
 } VM;
 
 typedef enum {
@@ -36,10 +37,10 @@ typedef enum {
   COMPILE_ERROR
 } InterpretResult;
 
-void initVM(VM* vm, Chunk* chunk);
+void initVM(VM* vm, Chunk* chunk, Compiler* compiler);
 void resetVM(VM* vm);
 void freeVM(VM* vm);
-InterpretResult interpret(VM* vm, const char* source, Compiler* compiler);
+InterpretResult interpret(VM* vm, const char* source);
 void push(VM* vm, Value val);
 Value pop(VM* vm);
 
