@@ -5,6 +5,7 @@
 #include <stdbool.h>
 
 typedef struct expression Expression;
+typedef struct Statement Statement;
 
 /**
  * header file for data structures related to abstract syntax tree (i.e., "ast")
@@ -14,6 +15,7 @@ typedef enum {
   STMT_RETURN,
   STMT_VAR,
   STMT_EXPR,
+  STMT_BLOCK,
   STMT_NULL
 } StatementType;
 
@@ -112,23 +114,6 @@ typedef struct {
 } ExpressionStatement;
 
 /**
- * all the structures for different statement types
- */
-typedef union {
-  ReturnStatement returnStmt; // => STMT_RETURN
-  VarStatement varStmt; // => STMT_VAR
-  ExpressionStatement expressionStmt; // => STMT_EXPR
-} StatementData;
-
-/**
- * generic container for all statements
- */
-typedef struct {
-  StatementType type;
-  StatementData data;
-} Statement;
-
-/**
  * dynamic array of statements
  */
 typedef struct {
@@ -136,5 +121,29 @@ typedef struct {
   int capacity;
   Statement* stmts;
 } Statements;
+
+
+typedef struct {
+  Token token;
+  Statements stmts;
+} BlockStatement;
+
+/**
+ * all the structures for different statement types
+ */
+typedef union {
+  ReturnStatement returnStmt; // => STMT_RETURN
+  VarStatement varStmt; // => STMT_VAR
+  ExpressionStatement expressionStmt; // => STMT_EXPR
+  BlockStatement blockStmt; // => STMT_BLOCK
+} StatementData;
+
+/**
+ * generic container for all statements
+ */
+struct Statement {
+  StatementType type;
+  StatementData data;
+};
 
 #endif

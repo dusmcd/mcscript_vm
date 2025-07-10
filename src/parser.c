@@ -12,6 +12,8 @@ static Expression grouped(Parser*, Scanner*);
 static bool expect(Parser*, Scanner*, TokenType);
 static Expression boolean(Parser*, Scanner*);
 static Expression identifier(Parser*, Scanner*);
+static void append(Statements* statements, Statement stmt);
+static Statement parseStatement(Parser* parser, Scanner* scanner);
 
 static void error(Parser* parser, const char* msg) {
   fprintf(stderr, "[line %d]: Error: %s\n", parser->previous.line, msg);
@@ -145,6 +147,7 @@ static Expression number(Parser* parser, Scanner* scanner) {
 
   Expression expr = {.type = EXPR_NUMBER};
   expr.data.number = number;
+  free(buff);
 
   return expr;
 }
@@ -237,6 +240,34 @@ static ExpressionStatement parseExpressionStatement(Parser* parser, Scanner* sca
   return es;
 }
 
+static BlockStatement parseBlockStatement(Parser* parser, Scanner* scanner) {
+  BlockStatement bs = {.token = parser->previous};
+  Statements statements = {
+    .count = 0,
+    .capacity = 0,
+    .stmts = NULL
+  };
+
+  while (true) {
+    Statement stmt = parseStatement(parser, scanner);
+    if (stmt.type != STMT_NULL) {
+      append(&statements, stmt);    
+    }
+
+    if (parser->current.type == TOKEN_EOF) {
+      error(parser, "expected closing brace");
+      break;
+    }
+
+    if (parser->current.type == TOKEN_RIGHT_BRACE) break;
+
+    advance(parser, scanner);
+  }
+
+  bs.stmts = statements;
+  return bs;
+}
+
 static Statement parseStatement(Parser* parser, Scanner* scanner) {
   Statement stmt;
   switch(parser->previous.type) {
@@ -250,6 +281,13 @@ static Statement parseStatement(Parser* parser, Scanner* scanner) {
       VarStatement vs = parseVarStatement(parser, scanner);
       stmt.type = STMT_VAR;
       stmt.data.varStmt = vs;
+      break;
+    }
+    case TOKEN_LEFT_BRACE: {
+      // parse block statement
+      BlockStatement bs = parseBlockStatement(parser, scanner);
+      stmt.type = STMT_BLOCK;
+      stmt.data.blockStmt = bs;
       break;
     }
     case TOKEN_SEMICOLON:

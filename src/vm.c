@@ -309,11 +309,11 @@ static InterpretResult run(VM* vm) {
 }
 
 
-InterpretResult interpret(VM* vm, const char* source) {
+InterpretResult interpret(VM* vm, const char* source, Compiler* compiler) {
   Parser parser;
   Statements statements = parse(&parser, source);
 
-  if (!compile(vm, &statements)) {
+  if (!compile(vm, &statements, compiler)) {
     freeStatements(&statements);
     return COMPILE_ERROR;
   }

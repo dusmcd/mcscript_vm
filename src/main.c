@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <compiler.h>
 
 static const char* readFile(const char* fileName) {
   FILE* file = fopen(fileName, "r");
@@ -47,7 +48,7 @@ static const char* readFile(const char* fileName) {
   return source;
 }
 
-static void repl(VM* vm) {
+static void repl(VM* vm, Compiler* compiler) {
   printf("Welcome to VMScript v. 0.1 Programming language\n");
   printf("Begin typing commands. Type 'exit' to terminate\n");
 
@@ -61,7 +62,7 @@ static void repl(VM* vm) {
       break;
     }
 
-    InterpretResult result = interpret(vm, line);
+    InterpretResult result = interpret(vm, line, compiler);
     freeChunk(vm->chunk);
     resetVM(vm);
     if (result == COMPILE_ERROR) {
@@ -82,12 +83,15 @@ int main(int argc, char** argv) {
   VM vm;
   initVM(&vm, &chunk);
 
+  Compiler compiler;
+  initCompiler(&compiler);
+
   if (argc == 1) {
     // run repl
-    repl(&vm);
+    repl(&vm, &compiler);
   } else if (argc == 2) {
     const char* source = readFile(argv[1]);
-    InterpretResult result = interpret(&vm, source);
+    InterpretResult result = interpret(&vm, source, &compiler);
     free((char*)source);
     source = NULL;
     freeChunk(&chunk);

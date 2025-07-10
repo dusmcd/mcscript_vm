@@ -12,6 +12,7 @@
 #include <string.h>
 
 static bool compileExpression(VM*, Expression*);
+static bool compileStatement(VM* vm, const Statement* stmt, Compiler* compiler);
 
 static void error(const char* msg, int line) {
   fprintf(stderr, "[line %d] ERROR: %s\n", line, msg);
@@ -186,7 +187,23 @@ static bool compileVarStatement(VM* vm, const Statement* stmt) {
   return true;
 }
 
-static bool compileStatement(VM* vm, const Statement* stmt) {
+static bool compileBlockStatement(VM* vm, const Statement* stmt, Compiler* compiler) {
+  compiler->scopeDepth++;
+  Statements stmts = stmt->data.blockStmt.stmts;
+
+  for (int i = 0; i < stmts.count; i++) {
+    Statement inner = stmts.stmts[i];
+    if (inner.type == STMT_VAR) {
+      // create local variable
+    } else {
+      if (!compileStatement(vm, &inner, compiler)) return false;
+    }
+  }
+  compiler->scopeDepth--;
+  return true;
+}
+
+static bool compileStatement(VM* vm, const Statement* stmt, Compiler* compiler) {
   switch(stmt->type) {
     case STMT_RETURN:
       // compile return statement
@@ -199,18 +216,26 @@ static bool compileStatement(VM* vm, const Statement* stmt) {
       freeExpression(&expr);
       return result;
     }
+    case STMT_BLOCK: {
+      // compile block statement
+      return compileBlockStatement(vm, stmt, compiler);
+    }
     case STMT_NULL:
       return true;
   } 
   return true;
 }
 
-bool compile(VM* vm, const Statements* statements) {
+bool compile(VM* vm, const Statements* statements, Compiler* compiler) {
   for (int i = 0; i < statements->count; i++) {
     Statement stmt = statements->stmts[i];
-    bool isError = !compileStatement(vm, &stmt);
+    bool isError = !compileStatement(vm, &stmt, compiler);
     if (isError) return false;
   }
   return true;
 }
 
+void initCompiler(Compiler *compiler) {
+  compiler->scopeDepth = 0;
+  compiler->localCount = 0;
+}

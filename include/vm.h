@@ -8,6 +8,8 @@
 
 #define STACK_MAX 256
 
+typedef struct Compiler Compiler;
+
 /**
  * Holds all the data needed to execute bytecode instructions
  */
@@ -37,7 +39,7 @@ typedef enum {
 void initVM(VM* vm, Chunk* chunk);
 void resetVM(VM* vm);
 void freeVM(VM* vm);
-InterpretResult interpret(VM* vm, const char* source);
+InterpretResult interpret(VM* vm, const char* source, Compiler* compiler);
 void push(VM* vm, Value val);
 Value pop(VM* vm);
 
