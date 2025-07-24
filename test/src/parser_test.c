@@ -1,3 +1,4 @@
+#include "ast.h"
 #include <scanner.h>
 #include <parser_test.h>
 #include <parser.h>
@@ -354,6 +355,44 @@ static void testReturnStmt() {
   printf("testReturnStmt() passed\n");
 }
 
+static void testBlockStmt() {
+  Parser parser;
+
+  Test tests = {.count = 2, .tests = {"{5;}", "{10;}"}, .expectedNums = {5, 10}};
+  for (int i = 0; i < tests.count; i++) {
+    Statements stmts = parse(&parser, tests.tests[i]);
+    if (stmts.count != 1) {
+      fprintf(stderr, "stmts does not contain 1 statement. got %d\n",
+          stmts.count);
+      return;
+    }
+    Statement stmt = stmts.stmts[0];
+    if (stmt.type != STMT_BLOCK) {
+      fprintf(stderr, "statement is not STMT_BLOCK\n");
+      return;
+    }
+    BlockStatement bs = stmt.data.blockStmt;
+    Statements inners = bs.stmts;
+    if (inners.count != 1) {
+      fprintf(stderr, "inner statements does not contain 1 statement. got %d\n",
+          inners.count);
+      return;
+    }
+    Statement inner = inners.stmts[0];
+    if (inner.type != STMT_EXPR) {
+      fprintf(stderr, "inner is not STMT_EXPR\n");
+      return;
+    }
+
+    Expression expr = inner.data.expressionStmt.expression;
+    if (!testNumber(expr, tests.expectedNums[i])) {
+      return;
+    }
+    
+  }
+  puts("testBlockStmt() passed");
+}
+
 static void testNumberExpression() {
   Parser parser;
   Test tests = {.count = 3, .tests = {"10;", "11;", "10.12;"}};
@@ -430,5 +469,6 @@ void testParser() {
   testErrors();
   testBooleanExpressions();
   testStringExpressions();
+  testBlockStmt();
   printf("\n");
 }

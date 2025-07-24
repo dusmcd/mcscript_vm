@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <object.h>
 #include <string.h>
+#include <stdint.h>
 
 static bool compileExpression(VM*, Expression*);
 static bool compileStatement(VM* vm, const Statement* stmt);
@@ -104,6 +105,48 @@ static char* createName(const Identifier* ident) {
   return name;
 }
 
+static int resolveLocal(VM* vm, Identifier ident) {
+  Compiler* compiler = vm->compiler;
+  for (int i = compiler->localCount - 1; i >= 0; i--) {
+    Local local = compiler->locals[i];
+    if (local.name.length == ident.token.length) {
+      const char* localStart = local.name.start;
+      const char* identStart = ident.token.start;
+      int length = ident.token.length;
+      if (memcmp(localStart, identStart, length) == 0) {
+        return i;
+      } 
+    }
+  }
+  return -1;
+}
+
+static bool compileIdentifier(VM* vm, Identifier ident) {
+  Compiler* compiler = vm->compiler;
+  int arg = resolveLocal(vm, ident);
+  uint8_t opCode;
+
+
+  if (arg == -1) {
+    char* name = createName(&ident);
+    Obj* obj = (Obj*)allocateString(vm, name);
+    if (obj == NULL) {
+      free(name);
+      return false;
+    }
+    Value val = OBJ_VAL(obj);
+    writeConstant(vm->chunk, val, ident.token.line);
+    opCode = OP_GET_GLOBAL;
+  } else {
+    Value val = NUMBER_VAL((uint8_t)arg);
+    writeConstant(vm->chunk, val, ident.token.line);
+    opCode = OP_GET_LOCAL;
+  }
+
+  writeChunk(vm->chunk, opCode, ident.token.line);
+  return true;
+}
+
 static bool compileExpression(VM* vm, Expression* expr) {
   switch(expr->type) {
     case EXPR_PREFIX: {
@@ -139,16 +182,10 @@ static bool compileExpression(VM* vm, Expression* expr) {
     }
     case EXPR_IDENT: {
       Identifier ident = expr->data.identifier;
-      char* name = createName(&ident);
-      Obj* obj = (Obj*)allocateString(vm, name);
-      if (obj == NULL) {
-        free(name);
+      if (!compileIdentifier(vm, ident)) {
+        error("insufficient memory", ident.token.line);
         return false;
       }
-      Value val = OBJ_VAL(obj);
-      writeConstant(vm->chunk, val, ident.token.line);
-
-      writeChunk(vm->chunk, OP_GET_GLOBAL, ident.token.line);
       break;
     }
     case EXPR_ERROR:
@@ -169,17 +206,41 @@ static bool compileExpression(VM* vm, Expression* expr) {
   return true;
 }
 
+static bool addLocal(VM* vm, Token name) {
+  Compiler* compiler = vm->compiler;
+  Local* local = &compiler->locals[compiler->localCount++];
+  local->name = name;
+  local->depth = compiler->scopeDepth;
+
+  if (compiler->localCount == UINT8_COUNT) {
+    error("Too many local variables in function", name.line);
+    return false;
+  }
+
+  return true;
+}
+
 static bool compileVarStatement(VM* vm, const Statement* stmt) {
   Identifier ident = stmt->data.varStmt.name;
-  char* name = createName(&ident);
+  bool isLocal = vm->compiler->scopeDepth > 0;
 
-  Obj* obj = (Obj*)allocateString(vm, name);
-  Value val = OBJ_VAL(obj);
-  writeConstant(vm->chunk, val, stmt->data.varStmt.token.line);
+  if (!isLocal) {
+    char* name = createName(&ident);
 
+    Obj* obj = (Obj*)allocateString(vm, name);
+    Value val = OBJ_VAL(obj);
+    writeConstant(vm->chunk, val, stmt->data.varStmt.token.line);
+  }
+  
   Expression expr = stmt->data.varStmt.value;
   if (!compileExpression(vm, &expr)) {
     return false;
+  }
+
+  // if scope depth is greater than zero, then variable is local
+  // so we do not want to create a global instruction
+  if (isLocal) {
+    return addLocal(vm, ident.token);
   }
 
 
@@ -193,13 +254,18 @@ static bool compileBlockStatement(VM* vm, const Statement* stmt) {
 
   for (int i = 0; i < stmts.count; i++) {
     Statement inner = stmts.stmts[i];
-    if (inner.type == STMT_VAR) {
-      // create local variable
-    } else {
-      if (!compileStatement(vm, &inner)) return false;
-    }
+    if (!compileStatement(vm, &inner)) return false;
   }
+
   vm->compiler->scopeDepth--;
+  Compiler* compiler = vm->compiler;
+  while(compiler->localCount > 0 &&
+      compiler->locals[compiler->localCount - 1].depth >
+        compiler->scopeDepth) {
+    writeChunk(vm->chunk, OP_POP, 0);
+    compiler->localCount--;
+  }
+
   return true;
 }
 
@@ -217,7 +283,6 @@ static bool compileStatement(VM* vm, const Statement* stmt) {
       return result;
     }
     case STMT_BLOCK: {
-      // compile block statement
       return compileBlockStatement(vm, stmt);
     }
     case STMT_NULL:

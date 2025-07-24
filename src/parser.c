@@ -62,7 +62,8 @@ const ParserRule rules[] = {
   [TOKEN_LESS_EQUAL] = {NULL, binary, PREC_COMPARISON},
   [TOKEN_STRING] = {string, NULL, PREC_NONE},
   [TOKEN_IDENTIFIER] = {identifier, NULL, PREC_NONE},
-  [TOKEN_ILLEGAL] = {NULL, NULL, PREC_NONE}
+  [TOKEN_ILLEGAL] = {NULL, NULL, PREC_NONE},
+  [TOKEN_SEMICOLON] = {NULL, NULL, PREC_NONE}
 };
 
 static ParserRule getRule(TokenType type) {
@@ -219,7 +220,11 @@ static VarStatement parseVarStatement(Parser* parser, Scanner* scanner) {
     return vs;
   }
 
-  Identifier name = {.length = parser->previous.length, .start = parser->previous.start};
+  Identifier name = {
+    .length = parser->previous.length,
+    .start = parser->previous.start,
+    .token = parser->previous
+  };
   vs.name = name;
 
   if (parser->current.type == TOKEN_EQUAL) {
@@ -247,6 +252,7 @@ static BlockStatement parseBlockStatement(Parser* parser, Scanner* scanner) {
     .capacity = 0,
     .stmts = NULL
   };
+  advance(parser, scanner);
 
   while (true) {
     Statement stmt = parseStatement(parser, scanner);
@@ -259,7 +265,10 @@ static BlockStatement parseBlockStatement(Parser* parser, Scanner* scanner) {
       break;
     }
 
-    if (parser->current.type == TOKEN_RIGHT_BRACE) break;
+    if (parser->current.type == TOKEN_RIGHT_BRACE) {
+      advance(parser, scanner);
+      break;
+    }
 
     advance(parser, scanner);
   }
