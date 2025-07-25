@@ -299,7 +299,8 @@ static InterpretResult run(VM* vm) {
       case OP_GET_LOCAL: {
         Value slot = peek(vm, 1);
         pop(vm);
-        push(vm, vm->valueStack[(int)AS_NUMBER(slot)]);
+        int index = (int)AS_NUMBER(slot);
+        push(vm, vm->valueStack[index]);
         break;
       }
       case OP_POP:

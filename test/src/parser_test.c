@@ -328,7 +328,7 @@ static void testReturnStmt() {
   for (int i = 0; i < tests.count; i++) {
     Statements stmts = parse(&parser, tests.tests[i]);
     if (stmts.count != 1) {
-      fprintf(stderr, "stmts does not contain 1 statement. got %d\n",
+      fprintf(stderr, "stmts does not contain 1 statement. got=%d\n",
           stmts.count);
       return;
     }
@@ -362,7 +362,7 @@ static void testBlockStmt() {
   for (int i = 0; i < tests.count; i++) {
     Statements stmts = parse(&parser, tests.tests[i]);
     if (stmts.count != 1) {
-      fprintf(stderr, "stmts does not contain 1 statement. got %d\n",
+      fprintf(stderr, "stmts does not contain 1 statement. got=%d\n",
           stmts.count);
       return;
     }
@@ -374,7 +374,7 @@ static void testBlockStmt() {
     BlockStatement bs = stmt.data.blockStmt;
     Statements inners = bs.stmts;
     if (inners.count != 1) {
-      fprintf(stderr, "inner statements does not contain 1 statement. got %d\n",
+      fprintf(stderr, "inner statements does not contain 1 statement. got=%d\n",
           inners.count);
       return;
     }
@@ -388,7 +388,8 @@ static void testBlockStmt() {
     if (!testNumber(expr, tests.expectedNums[i])) {
       return;
     }
-    
+    freeStatements(&inners);    
+    freeStatements(&stmts);    
   }
   puts("testBlockStmt() passed");
 }
