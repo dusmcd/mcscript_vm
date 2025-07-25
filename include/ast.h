@@ -4,8 +4,21 @@
 #include <scanner.h>
 #include <stdbool.h>
 
+#define AS_EXPR_NUM(expr) expr.data.number
+#define AS_EXPR_INFIX(expr) expr.data.infix
+#define AS_EXPR_PREFIX(expr) expr.data.prefix
+#define AS_EXPR_GROUP(expr) expr.data.group
+#define AS_EXPR_IDENT(expr) expr.data.identifier
+#define AS_EXPR_BOOL(expr) expr.data.boolean
+
+#define AS_VARSTMT(stmt) stmt.data.varStmt
+#define AS_BLOCKSTMT(stmt) stmt.data.blockStmt
+#define AS_EXPRSTMT(stmt) stmt.data.expressionStmt
+
 typedef struct expression Expression;
 typedef struct Statement Statement;
+
+
 
 /**
  * header file for data structures related to abstract syntax tree (i.e., "ast")

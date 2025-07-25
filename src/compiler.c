@@ -150,21 +150,21 @@ static bool compileIdentifier(VM* vm, Identifier ident) {
 static bool compileExpression(VM* vm, Expression* expr) {
   switch(expr->type) {
     case EXPR_PREFIX: {
-      Prefix prefix = expr->data.prefix;
+      Prefix prefix = AS_EXPR_PREFIX((*expr));
       if (compilePrefix(vm, &prefix)) break;
       return false;
     case EXPR_INFIX: {
-      Infix infix = expr->data.infix;
+      Infix infix = AS_EXPR_INFIX((*expr));
       if (compileInfix(vm, &infix)) break;
       return false;
     }
     case EXPR_GROUP: {
-      Group group = expr->data.group;
+      Group group = AS_EXPR_GROUP((*expr));
       if (compileExpression(vm, group.expr)) break;
       return false;
     }
     case EXPR_NUMBER: {
-      Number number = expr->data.number;
+      Number number = AS_EXPR_NUM((*expr));
       Value val = NUMBER_VAL(number.value);
       writeConstant(vm->chunk, val, number.token.line);
       break;
@@ -181,7 +181,7 @@ static bool compileExpression(VM* vm, Expression* expr) {
       break;
     }
     case EXPR_IDENT: {
-      Identifier ident = expr->data.identifier;
+      Identifier ident = AS_EXPR_IDENT((*expr));
       if (!compileIdentifier(vm, ident)) {
         error("insufficient memory", ident.token.line);
         return false;
@@ -192,7 +192,7 @@ static bool compileExpression(VM* vm, Expression* expr) {
       return false;
     }
     case EXPR_BOOL:
-      if (expr->data.boolean.value) {
+      if (AS_EXPR_BOOL((*expr)).value) {
         writeChunk(vm->chunk, OP_TRUE, expr->data.boolean.token.line);
       } else {
         writeChunk(vm->chunk, OP_FALSE, expr->data.boolean.token.line);
@@ -221,7 +221,7 @@ static bool addLocal(VM* vm, Token name) {
 }
 
 static bool compileVarStatement(VM* vm, const Statement* stmt) {
-  Identifier ident = stmt->data.varStmt.name;
+  Identifier ident = AS_VARSTMT((*stmt)).name;
   bool isLocal = vm->compiler->scopeDepth > 0;
 
   if (!isLocal) {
@@ -232,7 +232,7 @@ static bool compileVarStatement(VM* vm, const Statement* stmt) {
     writeConstant(vm->chunk, val, stmt->data.varStmt.token.line);
   }
   
-  Expression expr = stmt->data.varStmt.value;
+  Expression expr = AS_VARSTMT((*stmt)).value;
   if (!compileExpression(vm, &expr)) {
     return false;
   }
@@ -250,7 +250,7 @@ static bool compileVarStatement(VM* vm, const Statement* stmt) {
 
 static bool compileBlockStatement(VM* vm, const Statement* stmt) {
   vm->compiler->scopeDepth++;
-  Statements stmts = stmt->data.blockStmt.stmts;
+  Statements stmts = AS_BLOCKSTMT((*stmt)).stmts;
 
   for (int i = 0; i < stmts.count; i++) {
     Statement inner = stmts.stmts[i];
@@ -277,7 +277,7 @@ static bool compileStatement(VM* vm, const Statement* stmt) {
     case STMT_VAR:
       return compileVarStatement(vm, stmt);
     case STMT_EXPR: {
-      Expression expr = stmt->data.expressionStmt.expression;
+      Expression expr = AS_EXPRSTMT((*stmt)).expression;
       bool result = compileExpression(vm, &expr);
       freeExpression(&expr);
       return result;
