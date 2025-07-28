@@ -14,6 +14,7 @@
 #define AS_VARSTMT(stmt) stmt.data.varStmt
 #define AS_BLOCKSTMT(stmt) stmt.data.blockStmt
 #define AS_EXPRSTMT(stmt) stmt.data.expressionStmt
+#define AS_IFSTMT(stmt) stmt.data.ifStmt
 
 typedef struct expression Expression;
 typedef struct Statement Statement;
@@ -29,6 +30,7 @@ typedef enum {
   STMT_VAR,
   STMT_EXPR,
   STMT_BLOCK,
+  STMT_IF,
   STMT_NULL
 } StatementType;
 
@@ -142,6 +144,16 @@ typedef struct {
 } BlockStatement;
 
 /**
+ * if statement for control flow/branching
+*/
+typedef struct {
+  Token token;
+  Expression condition;
+  BlockStatement block;
+  BlockStatement elseBlock;
+} IfStatement;
+
+/**
  * all the structures for different statement types
  */
 typedef union {
@@ -149,6 +161,7 @@ typedef union {
   VarStatement varStmt; // => STMT_VAR
   ExpressionStatement expressionStmt; // => STMT_EXPR
   BlockStatement blockStmt; // => STMT_BLOCK
+  IfStatement ifStmt; // => STMT_IF
 } StatementData;
 
 /**

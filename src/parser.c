@@ -277,6 +277,46 @@ static BlockStatement parseBlockStatement(Parser* parser, Scanner* scanner) {
   return bs;
 }
 
+static IfStatement parseIfStatement(Parser* parser, Scanner* scanner) {
+  IfStatement is = {.token = parser->previous};
+
+  if (!expect(parser, scanner, TOKEN_LEFT_PAREN)) {
+    error(parser, "expected open paren");
+    return is;
+  }
+
+  // consume the left paren
+  advance(parser, scanner);
+
+  Expression booleanExpr = parseExpression(parser, scanner, PREC_NONE);
+  if (booleanExpr.type == EXPR_ERROR) return is;
+  is.condition = booleanExpr;
+
+  if (!expect(parser, scanner, TOKEN_RIGHT_PAREN)) {
+    error(parser, "expected closing paren");
+    return is;
+  }
+
+  if (!expect(parser, scanner, TOKEN_LEFT_BRACE)) {
+    error(parser, "expected opening brace");
+    return is;
+  }
+
+  is.block = parseBlockStatement(parser, scanner);
+
+  if (parser->current.type == TOKEN_ELSE) {
+    // consume else token
+    advance(parser, scanner); 
+    advance(parser, scanner);
+    is.elseBlock = parseBlockStatement(parser, scanner);
+  } else {
+    is.elseBlock = (BlockStatement){.token = (Token){.type = TOKEN_NULL}};
+  }
+
+
+  return is;
+}
+
 static Statement parseStatement(Parser* parser, Scanner* scanner) {
   Statement stmt;
   switch(parser->previous.type) {
@@ -297,6 +337,12 @@ static Statement parseStatement(Parser* parser, Scanner* scanner) {
       BlockStatement bs = parseBlockStatement(parser, scanner);
       stmt.type = STMT_BLOCK;
       stmt.data.blockStmt = bs;
+      break;
+    }
+    case TOKEN_IF: {
+      IfStatement is = parseIfStatement(parser, scanner);
+      stmt.type = STMT_IF;
+      stmt.data.ifStmt = is;
       break;
     }
     case TOKEN_SEMICOLON:

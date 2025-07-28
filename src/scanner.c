@@ -166,6 +166,12 @@ static TokenType getIdentifierType(Scanner* scanner, int length) {
         return TOKEN_FUNCTION;
       }
       break;
+    case 'i':
+      if (length == 2 &&
+          memcmp(scanner->start + 1, "f", 1) == 0) {
+        return TOKEN_IF;
+      }
+      break;
     case 'o':
       if (length == 2 &&
           memcmp(scanner->start + 1, "r", 1) == 0) {

@@ -459,6 +459,78 @@ static void testVarStmt() {
   printf("testVarStmt() passed\n");
 }
 
+void testIfStatement() {
+  Parser parser;
+  Test test = {.count = 2, .tests = {"if(5 == 5) {10;}", "if (false) {10;} else {1;}"}, .expectedNums = {10, 1}};
+
+  for (int i = 0; i < test.count; i++) {
+    const char* src = test.tests[i];
+    Statements stmts = parse(&parser, src);
+
+    if (stmts.count != 1) {
+      fprintf(stderr, "stmts does not contain 1 statement. got=%d\n",
+          stmts.count);
+      return;
+    }
+
+    Statement stmt = stmts.stmts[0];
+    if (stmt.type != STMT_IF) {
+      fprintf(stderr, "stmt is not STMT_IF\n");
+      return;
+    }
+
+    IfStatement is = AS_IFSTMT(stmt);
+    BlockStatement block = is.block;
+    Statements inner = block.stmts;
+
+    if (inner.count != 1) {
+      fprintf(stderr, "inner does not contain 1 statement. got=%d\n",
+          inner.count);
+      return;
+    }
+
+    Statement innerStmt = inner.stmts[0];
+    if (innerStmt.type != STMT_EXPR) {
+      fprintf(stderr, "innerStmt is not STMT_EXPR\n");
+      return;
+    }
+
+    Expression expr;
+    if (i == 0) {
+      expr = AS_EXPRSTMT(innerStmt).expression;
+      if (is.elseBlock.token.type != TOKEN_NULL) {
+        fprintf(stderr, "else block should be null\n");
+        return;
+      }
+    } else if (i == 1) {
+      Statements innerElse = is.elseBlock.stmts;
+      if (innerElse.count != 1) {
+        fprintf(stderr, "inner else statements does not contain 1 statement. got=%d\n",
+            innerElse.count);
+        return;
+      }
+
+      Statement innerElseStmt = innerElse.stmts[0];
+      if (innerElseStmt.type != STMT_EXPR) {
+        fprintf(stderr, "innerElseStmt is not STMT_EXPR\n");
+        return;
+      }
+
+      expr = AS_EXPRSTMT(innerElseStmt).expression;
+      freeStatements(&innerElse);
+    }
+
+    if (!testNumber(expr, test.expectedNums[i])) {
+      return;
+    }
+
+    freeStatements(&stmts);
+    freeStatements(&inner);
+    
+  }
+  puts("testIfStatement() passed");
+}
+
 void testParser() {
   printf("=== Parser Tests ===\n");
   testReturnStmt();
@@ -471,5 +543,6 @@ void testParser() {
   testBooleanExpressions();
   testStringExpressions();
   testBlockStmt();
+  testIfStatement();
   printf("\n");
 }
