@@ -72,6 +72,10 @@ int disassembleInstruction(Chunk* chunk, int offset) {
       return simpleInstruction("OP_POP", offset);
     case OP_GET_LOCAL:
       return simpleInstruction("OP_GET_LOCAL", offset);
+    case OP_JUMP:
+      return simpleInstruction("OP_JUMP", offset);
+    case OP_JUMP_IF_FALSE:
+      return simpleInstruction("OP_JUMP_IF_FALSE", offset);
     case OP_NULL:
       return simpleInstruction("OP_NULL", offset);
     default:

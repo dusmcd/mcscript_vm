@@ -198,6 +198,8 @@ static InterpretResult run(VM* vm) {
 #define READ_BYTE() *(vm->ip++)
 #define READ_CONSTANT() \
   (vm->chunk->constants.data[READ_BYTE()])
+#define READ_SHORT() \
+  (uint16_t)((vm->ip[0] << 8) | vm->ip[1])
 
   while(true) {
 #ifdef DEBUG_STACK_TRACE
@@ -303,6 +305,21 @@ static InterpretResult run(VM* vm) {
         push(vm, vm->valueStack[index]);
         break;
       }
+      case OP_JUMP_IF_FALSE: {
+        // creating 16-bit integer with arguments
+        uint16_t offset = READ_SHORT();
+        vm->ip += 2;
+        if (isFalsey(peek(vm, 1))) {
+          vm->ip += offset;
+        }
+        break;
+      }
+      case OP_JUMP: {
+        uint16_t offset = READ_SHORT();
+        vm->ip += 2;
+        vm->ip += offset;
+        break;
+      }
       case OP_POP:
         pop(vm);
         break;
@@ -317,6 +334,7 @@ static InterpretResult run(VM* vm) {
 
 #undef READ_BYTE
 #undef READ_CONSTANT
+#undef READ_SHORT
 }
 
 

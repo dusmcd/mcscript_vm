@@ -269,6 +269,62 @@ static bool compileBlockStatement(VM* vm, const Statement* stmt) {
   return true;
 }
 
+static int emitJumpInstruction(VM* vm, uint8_t instr, int line) {
+  writeChunk(vm->chunk, instr, line);
+
+  // leave two bytes for jump offset
+  writeChunk(vm->chunk, 0xff, 0);
+  writeChunk(vm->chunk, 0xff, 0);
+
+  return vm->chunk->count - 2;
+}
+
+static void patchJump(VM* vm, int offset) {
+  int jump = vm->chunk->count - offset - 2;
+
+  if (jump > UINT16_MAX) {
+    error("too many bytes in jump", 0);
+    return;
+  }
+
+  // breaking out jump integer into 2 different bytes
+  vm->chunk->code[offset] = (jump >> 8) & 0xff;
+  vm->chunk->code[offset + 1] = jump & 0xff;
+}
+
+static bool compileIfStatement(VM* vm, const Statement* stmt) {
+  IfStatement is = AS_IFSTMT((*stmt));
+
+  if (!compileExpression(vm, &is.condition)) {
+    return false;
+  }
+
+  int thenOffset = emitJumpInstruction(vm, OP_JUMP_IF_FALSE, is.token.line);
+  writeChunk(vm->chunk, OP_POP, is.token.line);
+
+  Statement block = {.type = STMT_BLOCK, .data = {.blockStmt = is.block}};
+  if (!compileBlockStatement(vm, &block)) {
+    return false;
+  }
+
+  int elseOffset = emitJumpInstruction(vm, OP_JUMP, is.elseBlock.token.line);
+
+  patchJump(vm, thenOffset);
+  writeChunk(vm->chunk, OP_POP, is.token.line);
+
+  if (is.elseBlock.token.type != TOKEN_NULL) {
+    Statement elseBlock = {.type = STMT_BLOCK, .data = {.blockStmt = is.elseBlock}};
+    if (!compileBlockStatement(vm, &elseBlock)) {
+      return false;
+    }
+  }
+
+  patchJump(vm, elseOffset);
+
+
+  return true;
+}
+
 static bool compileStatement(VM* vm, const Statement* stmt) {
   switch(stmt->type) {
     case STMT_RETURN:
@@ -284,6 +340,9 @@ static bool compileStatement(VM* vm, const Statement* stmt) {
     }
     case STMT_BLOCK: {
       return compileBlockStatement(vm, stmt);
+    }
+    case STMT_IF: {
+      return compileIfStatement(vm, stmt);
     }
     case STMT_NULL:
       return true;
