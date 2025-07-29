@@ -317,6 +317,38 @@ static IfStatement parseIfStatement(Parser* parser, Scanner* scanner) {
   return is;
 }
 
+static WhileStatement parseWhileStatement(Parser* parser, Scanner* scanner) {
+  WhileStatement ws = {.token = parser->previous};
+
+  if (!expect(parser, scanner, TOKEN_LEFT_PAREN)) {
+    error(parser, "expected opening paren");
+    return (WhileStatement){.token = {.type = TOKEN_NULL}};
+  }
+
+  // consume opening paren
+  advance(parser, scanner);
+
+  ws.condition = parseExpression(parser, scanner, PREC_NONE);
+
+  if (ws.condition.type == EXPR_ERROR) {
+    return (WhileStatement){.token = {.type = TOKEN_NULL}};
+  }
+
+  if (!expect(parser, scanner, TOKEN_RIGHT_PAREN)) {
+    error(parser, "expected closing paren");
+    return (WhileStatement){.token = {.type = TOKEN_NULL}};
+  }
+  if (!expect(parser, scanner, TOKEN_LEFT_BRACE)) {
+    error(parser, "expected opening brace");
+    return (WhileStatement){.token = {.type = TOKEN_NULL}};
+  }
+
+  ws.block = parseBlockStatement(parser, scanner);
+
+  return ws;
+}
+
+
 static Statement parseStatement(Parser* parser, Scanner* scanner) {
   Statement stmt;
   switch(parser->previous.type) {
@@ -343,6 +375,12 @@ static Statement parseStatement(Parser* parser, Scanner* scanner) {
       IfStatement is = parseIfStatement(parser, scanner);
       stmt.type = STMT_IF;
       stmt.data.ifStmt = is;
+      break;
+    }
+    case TOKEN_WHILE: {
+      WhileStatement ws = parseWhileStatement(parser, scanner);
+      stmt.type = STMT_WHILE;
+      stmt.data.whileStmt = ws;
       break;
     }
     case TOKEN_SEMICOLON:

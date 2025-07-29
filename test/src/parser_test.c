@@ -531,6 +531,53 @@ void testIfStatement() {
   puts("testIfStatement() passed");
 }
 
+static void testWhileStatement() {
+  Parser parser;
+  Test test = {.count = 2, .tests = {"while(true){10;}", "while(1 == 1){10;}"}};
+
+  for (int i = 0; i < test.count; i++) {
+    const char* src = test.tests[i];
+    Statements stmts = parse(&parser, src);
+
+    if (stmts.count != 1) {
+      fprintf(stderr, "stmts does not contain 1 statement. got=%d\n",
+          stmts.count);
+      return;
+    }
+
+    Statement stmt = stmts.stmts[0];
+    if (stmt.type != STMT_WHILE) {
+      fprintf(stderr, "stmt is not STMT_WHILE\n");
+      return;
+    }
+
+    BlockStatement block = AS_WHILESTMT(stmt).block;
+    Statements inner = block.stmts;
+
+    if (inner.count != 1) {
+      fprintf(stderr, "inner stmts does not contain 1 statement. got=%d\n",
+          inner.count);
+      return;
+    }
+
+    Statement innerStmt = inner.stmts[0];
+    if (innerStmt.type != STMT_EXPR) {
+      fprintf(stderr, "innerStmt not STMT_EXPR\n");
+      return;
+    }
+
+    Expression expr = AS_EXPRSTMT(innerStmt).expression;
+    if (!testNumber(expr, 10.0)) {
+      return;
+    }
+
+    freeStatements(&stmts);
+    freeStatements(&inner);
+  }
+
+  puts("testWhileStatement() passed");
+}
+
 void testParser() {
   printf("=== Parser Tests ===\n");
   testReturnStmt();
@@ -544,5 +591,6 @@ void testParser() {
   testStringExpressions();
   testBlockStmt();
   testIfStatement();
+  testWhileStatement();
   printf("\n");
 }

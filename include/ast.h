@@ -15,6 +15,7 @@
 #define AS_BLOCKSTMT(stmt) stmt.data.blockStmt
 #define AS_EXPRSTMT(stmt) stmt.data.expressionStmt
 #define AS_IFSTMT(stmt) stmt.data.ifStmt
+#define AS_WHILESTMT(stmt) stmt.data.whileStmt
 
 typedef struct expression Expression;
 typedef struct Statement Statement;
@@ -31,6 +32,7 @@ typedef enum {
   STMT_EXPR,
   STMT_BLOCK,
   STMT_IF,
+  STMT_WHILE,
   STMT_NULL
 } StatementType;
 
@@ -154,6 +156,15 @@ typedef struct {
 } IfStatement;
 
 /**
+ * while loop
+ */
+typedef struct {
+  Token token;
+  Expression condition;
+  BlockStatement block;
+} WhileStatement;
+
+/**
  * all the structures for different statement types
  */
 typedef union {
@@ -162,6 +173,7 @@ typedef union {
   ExpressionStatement expressionStmt; // => STMT_EXPR
   BlockStatement blockStmt; // => STMT_BLOCK
   IfStatement ifStmt; // => STMT_IF
+  WhileStatement whileStmt; // => STMT_WHILE
 } StatementData;
 
 /**
