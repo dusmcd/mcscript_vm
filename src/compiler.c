@@ -14,6 +14,8 @@
 
 static bool compileExpression(VM*, Expression*);
 static bool compileStatement(VM* vm, const Statement* stmt);
+static int emitJumpInstruction(VM* vm, uint8_t instr, int line);
+static void patchJump(VM* vm, int offset);
 
 static void error(const char* msg, int line) {
   fprintf(stderr, "[line %d] ERROR: %s\n", line, msg);
@@ -39,7 +41,35 @@ static bool compilePrefix(VM* vm, Prefix* prefix) {
   return true;
 }
 
+static bool compileAndExpression(VM* vm, Infix* infix) {
+  if (!compileExpression(vm, infix->left)) {
+    return false;
+  }
+  int leftOffset = emitJumpInstruction(vm, OP_JUMP_IF_FALSE, infix->token.line);
+
+  writeChunk(vm->chunk, OP_POP, 0);
+  if (!compileExpression(vm, infix->right)) {
+    return false;
+  }
+  
+  patchJump(vm, leftOffset);
+
+  return true;
+}
+
+static bool compileOrExpression(VM* vm, Infix* infix) {
+  return true;
+}
+
 static bool compileInfix(VM* vm, Infix* infix) {
+  if (infix->operator == TOKEN_AND) {
+    return compileAndExpression(vm, infix);
+  }
+
+  if (infix->operator == TOKEN_OR) {
+    return compileOrExpression(vm, infix);
+  }
+
   if (!compileExpression(vm, infix->left)) return false;
   if (!compileExpression(vm, infix->right)) return false;
 
