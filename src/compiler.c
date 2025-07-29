@@ -58,6 +58,17 @@ static bool compileAndExpression(VM* vm, Infix* infix) {
 }
 
 static bool compileOrExpression(VM* vm, Infix* infix) {
+  if (!compileExpression(vm, infix->left)) {
+    return false;
+  }
+  int leftOffset = emitJumpInstruction(vm, OP_JUMP_IF_TRUE, infix->token.line);
+
+  writeChunk(vm->chunk, OP_POP, 0);
+  if (!compileExpression(vm, infix->right)) {
+    return false;
+  }
+
+  patchJump(vm, leftOffset);
   return true;
 }
 
