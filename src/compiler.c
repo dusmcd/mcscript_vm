@@ -366,6 +366,40 @@ static bool compileIfStatement(VM* vm, const Statement* stmt) {
   return true;
 }
 
+static void emitLoop(VM* vm, int loopStart, int line) {
+  writeChunk(vm->chunk, OP_LOOP, line);
+  int jump = (vm->chunk->count - loopStart) + 2;
+
+  if (jump > UINT16_MAX) {
+    error("loop body too large", line);
+    return;
+  }
+
+  writeChunk(vm->chunk, (jump >> 8) & 0xff, line);
+  writeChunk(vm->chunk, jump & 0xff, line);
+}
+
+static bool compileWhileStatement(VM* vm, const Statement* stmt) {
+  WhileStatement ws = AS_WHILESTMT((*stmt));
+  int loopStart = vm->chunk->count;
+  if (!compileExpression(vm, &ws.condition)) {
+    return false;
+  }
+  int exitOffset = emitJumpInstruction(vm, OP_JUMP_IF_FALSE, ws.token.line);
+
+  writeChunk(vm->chunk, OP_POP, ws.token.line);
+  Statement block = {.type = STMT_BLOCK, .data = {.blockStmt = ws.block}};
+  if (!compileBlockStatement(vm, &block)) {
+    return false;
+  }
+  emitLoop(vm, loopStart, ws.token.line);
+
+  patchJump(vm, exitOffset);
+  writeChunk(vm->chunk, OP_POP, ws.token.line);
+
+  return true;
+}
+
 static bool compileStatement(VM* vm, const Statement* stmt) {
   switch(stmt->type) {
     case STMT_RETURN:
@@ -384,6 +418,9 @@ static bool compileStatement(VM* vm, const Statement* stmt) {
     }
     case STMT_IF: {
       return compileIfStatement(vm, stmt);
+    }
+    case STMT_WHILE: {
+      return compileWhileStatement(vm, stmt);
     }
     case STMT_NULL:
       return true;
