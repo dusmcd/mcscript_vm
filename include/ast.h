@@ -16,6 +16,7 @@
 #define AS_EXPRSTMT(stmt) stmt.data.expressionStmt
 #define AS_IFSTMT(stmt) stmt.data.ifStmt
 #define AS_WHILESTMT(stmt) stmt.data.whileStmt
+#define AS_ASSIGNSTMT(stmt) stmt.data.assignStmt
 
 typedef struct expression Expression;
 typedef struct Statement Statement;
@@ -33,6 +34,7 @@ typedef enum {
   STMT_BLOCK,
   STMT_IF,
   STMT_WHILE,
+  STMT_ASSIGN,
   STMT_NULL
 } StatementType;
 
@@ -165,6 +167,16 @@ typedef struct {
 } WhileStatement;
 
 /**
+ * assigning local and global variables
+ * to new values
+ */
+typedef struct {
+  Token token;
+  Expression value;
+  Identifier name;
+} AssignStatement;
+
+/**
  * all the structures for different statement types
  */
 typedef union {
@@ -174,6 +186,7 @@ typedef union {
   BlockStatement blockStmt; // => STMT_BLOCK
   IfStatement ifStmt; // => STMT_IF
   WhileStatement whileStmt; // => STMT_WHILE
+  AssignStatement assignStmt; // => STMT_ASSIGN
 } StatementData;
 
 /**

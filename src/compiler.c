@@ -162,7 +162,7 @@ static int resolveLocal(VM* vm, Identifier ident) {
   return -1;
 }
 
-static bool compileIdentifier(VM* vm, Identifier ident) {
+static bool compileIdentifier(VM* vm, Identifier ident, bool assign) {
   Compiler* compiler = vm->compiler;
   int arg = resolveLocal(vm, ident);
   uint8_t opCode;
@@ -177,11 +177,11 @@ static bool compileIdentifier(VM* vm, Identifier ident) {
     }
     Value val = OBJ_VAL(obj);
     writeConstant(vm->chunk, val, ident.token.line);
-    opCode = OP_GET_GLOBAL;
+    opCode = assign ? OP_SET_GLOBAL : OP_GET_GLOBAL;
   } else {
     Value val = NUMBER_VAL((uint8_t)arg);
     writeConstant(vm->chunk, val, ident.token.line);
-    opCode = OP_GET_LOCAL;
+    opCode = assign ? OP_SET_LOCAL : OP_GET_LOCAL;
   }
 
   writeChunk(vm->chunk, opCode, ident.token.line);
@@ -223,7 +223,7 @@ static bool compileExpression(VM* vm, Expression* expr) {
     }
     case EXPR_IDENT: {
       Identifier ident = AS_EXPR_IDENT((*expr));
-      if (!compileIdentifier(vm, ident)) {
+      if (!compileIdentifier(vm, ident, false)) {
         error("insufficient memory", ident.token.line);
         return false;
       }
@@ -400,6 +400,19 @@ static bool compileWhileStatement(VM* vm, const Statement* stmt) {
   return true;
 }
 
+static bool compileAssignStatement(VM* vm, const Statement* stmt) {
+  AssignStatement as = AS_ASSIGNSTMT((*stmt));
+  if (!compileExpression(vm, &as.value)) {
+    return false;
+  }
+
+  if (!compileIdentifier(vm, as.name, true)) {
+    return false;
+  }
+
+  return true;
+}
+
 static bool compileStatement(VM* vm, const Statement* stmt) {
   switch(stmt->type) {
     case STMT_RETURN:
@@ -407,6 +420,8 @@ static bool compileStatement(VM* vm, const Statement* stmt) {
       break;
     case STMT_VAR:
       return compileVarStatement(vm, stmt);
+    case STMT_ASSIGN:
+      return compileAssignStatement(vm, stmt);
     case STMT_EXPR: {
       Expression expr = AS_EXPRSTMT((*stmt)).expression;
       bool result = compileExpression(vm, &expr);

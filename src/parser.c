@@ -199,6 +199,16 @@ static Expression parseExpression(Parser* parser, Scanner* scanner, Precedence p
   return expr;
 }
 
+static Identifier createName(Parser* parser) {
+  Identifier name = {
+    .length = parser->previous.length,
+    .start = parser->previous.start,
+    .token = parser->previous
+  };
+
+  return name;
+}
+
 static ReturnStatement parseReturnStatement(Parser* parser, Scanner* scanner) {
   ReturnStatement rs;
   rs.token = parser->previous;
@@ -222,12 +232,7 @@ static VarStatement parseVarStatement(Parser* parser, Scanner* scanner) {
     return vs;
   }
 
-  Identifier name = {
-    .length = parser->previous.length,
-    .start = parser->previous.start,
-    .token = parser->previous
-  };
-  vs.name = name;
+  vs.name = createName(parser);
 
   if (parser->current.type == TOKEN_EQUAL) {
     // jump over equals sign
@@ -350,6 +355,24 @@ static WhileStatement parseWhileStatement(Parser* parser, Scanner* scanner) {
   return ws;
 }
 
+static AssignStatement parseAssignStatement(Parser* parser, Scanner* scanner) {
+  AssignStatement as = {.token = parser->previous, .name = createName(parser)};
+
+  if (!expect(parser, scanner, TOKEN_EQUAL)) {
+    error(parser, "expected assignment operator");
+    return (AssignStatement){.token = {.type = TOKEN_NULL}};
+  }
+
+  // consume equal token
+  advance(parser, scanner);
+
+  as.value = parseExpression(parser, scanner, PREC_NONE);
+  if (as.value.type == EXPR_ERROR) {
+    return (AssignStatement){.token = {.type = TOKEN_NULL}};
+  }
+
+  return as;
+}
 
 static Statement parseStatement(Parser* parser, Scanner* scanner) {
   Statement stmt;
@@ -383,6 +406,12 @@ static Statement parseStatement(Parser* parser, Scanner* scanner) {
       WhileStatement ws = parseWhileStatement(parser, scanner);
       stmt.type = STMT_WHILE;
       stmt.data.whileStmt = ws;
+      break;
+    }
+    case TOKEN_IDENTIFIER: {
+      AssignStatement as = parseAssignStatement(parser, scanner);
+      stmt.type = STMT_ASSIGN;
+      stmt.data.assignStmt = as;
       break;
     }
     case TOKEN_SEMICOLON:

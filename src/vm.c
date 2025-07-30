@@ -291,18 +291,32 @@ static InterpretResult run(VM* vm) {
         Value val;
         bool found = tableGet(&vm->globals, name, &val);
         if (!found) {
-          error("undefined identifier");
+          error("unexpected identifier");
           return RUNTIME_ERROR;
         }
         pop(vm);
         push(vm, val);
         break;
       }
-      case OP_GET_LOCAL: {
-        Value slot = peek(vm, 1);
+      case OP_SET_GLOBAL: {
+        ObjString* name = AS_STRING(peek(vm, 1));
+        bool isNewKey = tableSet(&vm->globals, name, peek(vm, 2));
+        if (isNewKey) {
+          error("unexpected identifier");
+          return RUNTIME_ERROR;
+        }
         pop(vm);
-        int index = (int)AS_NUMBER(slot);
+        pop(vm);
+        break;
+      }
+      case OP_GET_LOCAL: {
+        int index = (int)AS_NUMBER(pop(vm));
         push(vm, vm->valueStack[index]);
+        break;
+      }
+      case OP_SET_LOCAL: {
+        int index = (int)AS_NUMBER(pop(vm));
+        vm->valueStack[index] = pop(vm);
         break;
       }
       case OP_JUMP_IF_FALSE: {
