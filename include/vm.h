@@ -8,17 +8,36 @@
 
 #define STACK_MAX 256
 #define CURRENT_CHUNK(vm) vm->compiler->func->chunk
+#define FRAMES_MAX 64
 
 typedef struct Compiler Compiler;
+typedef struct ObjFunction ObjFunction;
+
+/**
+ * a stack frame for a function call
+ */
+typedef struct {
+  ObjFunction* func;
+  uint8_t* ip;
+  Value* basePointer;
+} CallFrame;
 
 /**
  * Holds all the data needed to execute bytecode instructions
  */
 typedef struct {
-  uint8_t* ip;
 
   /**
-   * stack to keep track of values used/needed
+   * array of stack frames
+   * the top most frame (index = frameCount - 1)
+   * is the frame for the function being called
+   */
+  CallFrame frame[FRAMES_MAX];
+
+  int frameCount;
+
+  /**
+   * call stack to keep track of values used/needed
    */
   Value valueStack[STACK_MAX];
 
@@ -26,6 +45,7 @@ typedef struct {
    * points one past the last-used slot in stack
    */
   Value* stackTop;
+
   Obj* objects;
   Table globals;
   Compiler* compiler;

@@ -48,12 +48,12 @@ struct objString {
 /**
  * function data type
  */
-typedef struct {
+ struct ObjFunction {
   Obj obj;
   ObjString* name;
   int numArgs;
   Chunk chunk;
-} ObjFunction;
+};
 
 static inline bool isObjType(Value value, ObjType type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;
