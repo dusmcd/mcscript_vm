@@ -266,7 +266,6 @@ static bool compileDeclaration(VM* vm, const Statement* stmt, Identifier ident) 
 
   if (!isLocal) {
     char* name = createName(&ident);
-
     Obj* obj = (Obj*)allocateString(vm, name);
     Value val = OBJ_VAL(obj);
     writeConstant(&CURRENT_CHUNK(vm), val, stmt->data.varStmt.token.line);
@@ -278,10 +277,8 @@ static bool compileDeclaration(VM* vm, const Statement* stmt, Identifier ident) 
     return addLocal(vm, ident.token);
   }
 
-
   writeChunk(&CURRENT_CHUNK(vm), OP_DEFINE_GLOBAL, stmt->data.varStmt.token.line);
   return true;
-
 }
 
 static bool compileVarStatement(VM* vm, const Statement* stmt) {
@@ -293,29 +290,6 @@ static bool compileVarStatement(VM* vm, const Statement* stmt) {
   }
 
   return compileDeclaration(vm, stmt, ident);
-
-  /*
-
-  bool isLocal = vm->compiler->scopeDepth > 0;
-
-  if (!isLocal) {
-    char* name = createName(&ident);
-
-    Obj* obj = (Obj*)allocateString(vm, name);
-    Value val = OBJ_VAL(obj);
-    writeConstant(&CURRENT_CHUNK(vm), val, stmt->data.varStmt.token.line);
-  }
-  
-  // if scope depth is greater than zero, then variable is local
-  // so we do not want to create a global instruction
-  if (isLocal) {
-    return addLocal(vm, ident.token);
-  }
-
-
-  writeChunk(&CURRENT_CHUNK(vm), OP_DEFINE_GLOBAL, stmt->data.varStmt.token.line);
-  return true;
-  */
 }
 
 static bool compileBlockStatement(VM* vm, const Statement* stmt) {

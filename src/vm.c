@@ -285,8 +285,8 @@ static InterpretResult run(VM* vm) {
         break;
       }
       case OP_DEFINE_GLOBAL: {
-        ObjString* name = AS_STRING(peek(vm, 2));
-        Value val = peek(vm, 1);
+        ObjString* name = AS_STRING(peek(vm, 1));
+        Value val = peek(vm, 2);
         tableSet(&vm->globals, name, val);
         pop(vm);
         pop(vm);
