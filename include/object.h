@@ -5,19 +5,24 @@
 #include <stdbool.h>
 #include <ast.h>
 #include <vm.h>
+#include <chunk.h>
 
 #define OBJ_TYPE(value) AS_OBJ(value)->type
 #define IS_STRING(value) isObjType(value, OBJ_STRING)
+#define IS_FUNC(value) isObjType(value, OBJ_FUNCTION)
 
 #define AS_STRING(value) (ObjString*)AS_OBJ(value)
 #define AS_CSTRING(value) ((ObjString*)AS_OBJ(value))->str
+#define AS_FUNC(value) (ObjFunction*)AS_OBJ(value)
+#define CHUNK(func) func.chunk
 
 
 /**
  * the set of all object types
  */
 typedef enum {
-  OBJ_STRING
+  OBJ_STRING,
+  OBJ_FUNCTION
 } ObjType;
 
 /**
@@ -40,6 +45,16 @@ struct objString {
   uint32_t hash;
 };
 
+/**
+ * function data type
+ */
+typedef struct {
+  Obj obj;
+  ObjString* name;
+  int numArgs;
+  Chunk chunk;
+} ObjFunction;
+
 static inline bool isObjType(Value value, ObjType type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;
 }
@@ -61,5 +76,7 @@ char* createString(const Expression* expr);
  * hash function for a string
  */
 uint32_t hashString(const char* key, int length);
+
+ObjFunction* newFunction(VM* vm);
 
 #endif

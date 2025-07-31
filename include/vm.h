@@ -7,6 +7,7 @@
 #include <table.h>
 
 #define STACK_MAX 256
+#define CURRENT_CHUNK(vm) vm->compiler->func->chunk
 
 typedef struct Compiler Compiler;
 
@@ -25,7 +26,6 @@ typedef struct {
    * points one past the last-used slot in stack
    */
   Value* stackTop;
-  Chunk* chunk;
   Obj* objects;
   Table globals;
   Compiler* compiler;
@@ -37,7 +37,7 @@ typedef enum {
   COMPILE_ERROR
 } InterpretResult;
 
-void initVM(VM* vm, Chunk* chunk, Compiler* compiler);
+void initVM(VM* vm, Compiler* compiler);
 void resetVM(VM* vm);
 void freeVM(VM* vm);
 InterpretResult interpret(VM* vm, const char* source);

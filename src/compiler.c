@@ -24,10 +24,10 @@ static void error(const char* msg, int line) {
 static bool compilePrefix(VM* vm, Prefix* prefix) {
   if (prefix->operator == TOKEN_MINUS) {
     compileExpression(vm, prefix->expression);
-    writeChunk(vm->chunk, OP_NEGATE, prefix->token.line);
+    writeChunk(&CURRENT_CHUNK(vm), OP_NEGATE, prefix->token.line);
   } else if (prefix->operator == TOKEN_BANG){
     compileExpression(vm, prefix->expression);
-    writeChunk(vm->chunk, OP_NOT, prefix->token.line);
+    writeChunk(&CURRENT_CHUNK(vm), OP_NOT, prefix->token.line);
   } else {
     // handle error
     int line = prefix->token.line;
@@ -47,7 +47,7 @@ static bool compileAndExpression(VM* vm, Infix* infix) {
   }
   int leftOffset = emitJumpInstruction(vm, OP_JUMP_IF_FALSE, infix->token.line);
 
-  writeChunk(vm->chunk, OP_POP, 0);
+  writeChunk(&CURRENT_CHUNK(vm), OP_POP, 0);
   if (!compileExpression(vm, infix->right)) {
     return false;
   }
@@ -63,7 +63,7 @@ static bool compileOrExpression(VM* vm, Infix* infix) {
   }
   int leftOffset = emitJumpInstruction(vm, OP_JUMP_IF_TRUE, infix->token.line);
 
-  writeChunk(vm->chunk, OP_POP, 0);
+  writeChunk(&CURRENT_CHUNK(vm), OP_POP, 0);
   if (!compileExpression(vm, infix->right)) {
     return false;
   }
@@ -86,38 +86,38 @@ static bool compileInfix(VM* vm, Infix* infix) {
 
   switch(infix->operator) {
     case TOKEN_PLUS: {
-      writeChunk(vm->chunk, OP_ADD, infix->token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_ADD, infix->token.line);
       break;
     }
     case TOKEN_MINUS:
-      writeChunk(vm->chunk, OP_SUBTRACT, infix->token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_SUBTRACT, infix->token.line);
       break;
     case TOKEN_STAR:
-      writeChunk(vm->chunk, OP_MULTIPLY, infix->token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_MULTIPLY, infix->token.line);
       break;
     case TOKEN_SLASH:
-      writeChunk(vm->chunk, OP_DIVIDE, infix->token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_DIVIDE, infix->token.line);
       break;
     case TOKEN_LESS:
-      writeChunk(vm->chunk, OP_LESS, infix->token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_LESS, infix->token.line);
       break;
     case TOKEN_GREATER:
-      writeChunk(vm->chunk, OP_GREATER, infix->token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_GREATER, infix->token.line);
       break;
     case TOKEN_EQUAL_EQUAL:
-      writeChunk(vm->chunk, OP_EQUAL, infix->token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_EQUAL, infix->token.line);
       break;
     case TOKEN_BANG_EQUAL:
-      writeChunk(vm->chunk, OP_EQUAL, infix->token.line);
-      writeChunk(vm->chunk, OP_NOT, infix->token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_EQUAL, infix->token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_NOT, infix->token.line);
       break;
     case TOKEN_LESS_EQUAL:
-      writeChunk(vm->chunk, OP_GREATER, infix->token.line);
-      writeChunk(vm->chunk, OP_NOT, infix->token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_GREATER, infix->token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_NOT, infix->token.line);
       break;
     case TOKEN_GREATER_EQUAL:
-      writeChunk(vm->chunk, OP_LESS, infix->token.line);
-      writeChunk(vm->chunk, OP_NOT, infix->token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_LESS, infix->token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_NOT, infix->token.line);
       break;
     default: {
       // handle error
@@ -176,15 +176,15 @@ static bool compileIdentifier(VM* vm, Identifier ident, bool assign) {
       return false;
     }
     Value val = OBJ_VAL(obj);
-    writeConstant(vm->chunk, val, ident.token.line);
+    writeConstant(&CURRENT_CHUNK(vm), val, ident.token.line);
     opCode = assign ? OP_SET_GLOBAL : OP_GET_GLOBAL;
   } else {
     Value val = NUMBER_VAL((uint8_t)arg);
-    writeConstant(vm->chunk, val, ident.token.line);
+    writeConstant(&CURRENT_CHUNK(vm), val, ident.token.line);
     opCode = assign ? OP_SET_LOCAL : OP_GET_LOCAL;
   }
 
-  writeChunk(vm->chunk, opCode, ident.token.line);
+  writeChunk(&CURRENT_CHUNK(vm), opCode, ident.token.line);
   return true;
 }
 
@@ -207,7 +207,7 @@ static bool compileExpression(VM* vm, Expression* expr) {
     case EXPR_NUMBER: {
       Number number = AS_EXPR_NUM((*expr));
       Value val = NUMBER_VAL(number.value);
-      writeConstant(vm->chunk, val, number.token.line);
+      writeConstant(&CURRENT_CHUNK(vm), val, number.token.line);
       break;
     }
     case EXPR_STRING: {
@@ -218,7 +218,7 @@ static bool compileExpression(VM* vm, Expression* expr) {
         return false;
       }
       Value val = OBJ_VAL(obj);
-      writeConstant(vm->chunk, val, expr->data.string.token.line);
+      writeConstant(&CURRENT_CHUNK(vm), val, expr->data.string.token.line);
       break;
     }
     case EXPR_IDENT: {
@@ -234,13 +234,13 @@ static bool compileExpression(VM* vm, Expression* expr) {
     }
     case EXPR_BOOL:
       if (AS_EXPR_BOOL((*expr)).value) {
-        writeChunk(vm->chunk, OP_TRUE, expr->data.boolean.token.line);
+        writeChunk(&CURRENT_CHUNK(vm), OP_TRUE, expr->data.boolean.token.line);
       } else {
-        writeChunk(vm->chunk, OP_FALSE, expr->data.boolean.token.line);
+        writeChunk(&CURRENT_CHUNK(vm), OP_FALSE, expr->data.boolean.token.line);
       }
       break;
     case EXPR_NULL: 
-      writeChunk(vm->chunk, OP_NULL, expr->data.number.token.line);
+      writeChunk(&CURRENT_CHUNK(vm), OP_NULL, expr->data.number.token.line);
       break;
   }
 
@@ -270,7 +270,7 @@ static bool compileVarStatement(VM* vm, const Statement* stmt) {
 
     Obj* obj = (Obj*)allocateString(vm, name);
     Value val = OBJ_VAL(obj);
-    writeConstant(vm->chunk, val, stmt->data.varStmt.token.line);
+    writeConstant(&CURRENT_CHUNK(vm), val, stmt->data.varStmt.token.line);
   }
   
   Expression expr = AS_VARSTMT((*stmt)).value;
@@ -285,7 +285,7 @@ static bool compileVarStatement(VM* vm, const Statement* stmt) {
   }
 
 
-  writeChunk(vm->chunk, OP_DEFINE_GLOBAL, stmt->data.varStmt.token.line);
+  writeChunk(&CURRENT_CHUNK(vm), OP_DEFINE_GLOBAL, stmt->data.varStmt.token.line);
   return true;
 }
 
@@ -303,7 +303,7 @@ static bool compileBlockStatement(VM* vm, const Statement* stmt) {
   while(compiler->localCount > 0 &&
       compiler->locals[compiler->localCount - 1].depth >
         compiler->scopeDepth) {
-    writeChunk(vm->chunk, OP_POP, 0);
+    writeChunk(&CURRENT_CHUNK(vm), OP_POP, 0);
     compiler->localCount--;
   }
 
@@ -311,17 +311,17 @@ static bool compileBlockStatement(VM* vm, const Statement* stmt) {
 }
 
 static int emitJumpInstruction(VM* vm, uint8_t instr, int line) {
-  writeChunk(vm->chunk, instr, line);
+  writeChunk(&CURRENT_CHUNK(vm), instr, line);
 
   // leave two bytes for jump offset
-  writeChunk(vm->chunk, 0xff, 0);
-  writeChunk(vm->chunk, 0xff, 0);
+  writeChunk(&CURRENT_CHUNK(vm), 0xff, 0);
+  writeChunk(&CURRENT_CHUNK(vm), 0xff, 0);
 
-  return vm->chunk->count - 2;
+  return CURRENT_CHUNK(vm).count - 2;
 }
 
 static void patchJump(VM* vm, int offset) {
-  int jump = vm->chunk->count - offset - 2;
+  int jump = CURRENT_CHUNK(vm).count - offset - 2;
 
   if (jump > UINT16_MAX) {
     error("too many bytes in jump", 0);
@@ -329,8 +329,8 @@ static void patchJump(VM* vm, int offset) {
   }
 
   // breaking out jump integer into 2 different bytes
-  vm->chunk->code[offset] = (jump >> 8) & 0xff;
-  vm->chunk->code[offset + 1] = jump & 0xff;
+  CURRENT_CHUNK(vm).code[offset] = (jump >> 8) & 0xff;
+  CURRENT_CHUNK(vm).code[offset + 1] = jump & 0xff;
 }
 
 static bool compileIfStatement(VM* vm, const Statement* stmt) {
@@ -341,7 +341,7 @@ static bool compileIfStatement(VM* vm, const Statement* stmt) {
   }
 
   int thenOffset = emitJumpInstruction(vm, OP_JUMP_IF_FALSE, is.token.line);
-  writeChunk(vm->chunk, OP_POP, is.token.line);
+  writeChunk(&CURRENT_CHUNK(vm), OP_POP, is.token.line);
 
   Statement block = {.type = STMT_BLOCK, .data = {.blockStmt = is.block}};
   if (!compileBlockStatement(vm, &block)) {
@@ -351,7 +351,7 @@ static bool compileIfStatement(VM* vm, const Statement* stmt) {
   int elseOffset = emitJumpInstruction(vm, OP_JUMP, is.elseBlock.token.line);
 
   patchJump(vm, thenOffset);
-  writeChunk(vm->chunk, OP_POP, is.token.line);
+  writeChunk(&CURRENT_CHUNK(vm), OP_POP, is.token.line);
 
   if (is.elseBlock.token.type != TOKEN_NULL) {
     Statement elseBlock = {.type = STMT_BLOCK, .data = {.blockStmt = is.elseBlock}};
@@ -367,27 +367,27 @@ static bool compileIfStatement(VM* vm, const Statement* stmt) {
 }
 
 static void emitLoop(VM* vm, int loopStart, int line) {
-  writeChunk(vm->chunk, OP_LOOP, line);
-  int jump = (vm->chunk->count - loopStart) + 2;
+  writeChunk(&CURRENT_CHUNK(vm), OP_LOOP, line);
+  int jump = (CURRENT_CHUNK(vm).count - loopStart) + 2;
 
   if (jump > UINT16_MAX) {
     error("loop body too large", line);
     return;
   }
 
-  writeChunk(vm->chunk, (jump >> 8) & 0xff, line);
-  writeChunk(vm->chunk, jump & 0xff, line);
+  writeChunk(&CURRENT_CHUNK(vm), (jump >> 8) & 0xff, line);
+  writeChunk(&CURRENT_CHUNK(vm), jump & 0xff, line);
 }
 
 static bool compileWhileStatement(VM* vm, const Statement* stmt) {
   WhileStatement ws = AS_WHILESTMT((*stmt));
-  int loopStart = vm->chunk->count;
+  int loopStart = CURRENT_CHUNK(vm).count;
   if (!compileExpression(vm, &ws.condition)) {
     return false;
   }
   int exitOffset = emitJumpInstruction(vm, OP_JUMP_IF_FALSE, ws.token.line);
 
-  writeChunk(vm->chunk, OP_POP, ws.token.line);
+  writeChunk(&CURRENT_CHUNK(vm), OP_POP, ws.token.line);
   Statement block = {.type = STMT_BLOCK, .data = {.blockStmt = ws.block}};
   if (!compileBlockStatement(vm, &block)) {
     return false;
@@ -395,7 +395,7 @@ static bool compileWhileStatement(VM* vm, const Statement* stmt) {
   emitLoop(vm, loopStart, ws.token.line);
 
   patchJump(vm, exitOffset);
-  writeChunk(vm->chunk, OP_POP, ws.token.line);
+  writeChunk(&CURRENT_CHUNK(vm), OP_POP, ws.token.line);
 
   return true;
 }
@@ -443,16 +443,26 @@ static bool compileStatement(VM* vm, const Statement* stmt) {
   return true;
 }
 
-bool compile(VM* vm, const Statements* statements) {
+CompilerResult compile(VM* vm, const Statements* statements) {
   for (int i = 0; i < statements->count; i++) {
     Statement stmt = statements->stmts[i];
     bool isError = !compileStatement(vm, &stmt);
-    if (isError) return false;
+    if (isError) return (CompilerResult){.hasError = true};
   }
-  return true;
+  return (CompilerResult){.hasError = false, .func = vm->compiler->func};
 }
 
-void initCompiler(Compiler *compiler) {
+void initCompiler(VM* vm, Compiler *compiler, FunctionType type) {
   compiler->scopeDepth = 0;
   compiler->localCount = 0;
+
+  compiler->func = NULL;
+  compiler->type = type;
+
+  compiler->func = newFunction(vm);
+
+  // reserving the first slot for the compiler
+  Local* local = &compiler->locals[compiler->localCount++];
+  local->name = (Token){.type = TOKEN_NULL};
+  local->depth = 0;
 }

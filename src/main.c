@@ -63,7 +63,7 @@ static void repl(VM* vm, Compiler* compiler) {
     }
 
     InterpretResult result = interpret(vm, line);
-    freeChunk(vm->chunk);
+    freeChunk(&CURRENT_CHUNK(vm));
     resetVM(vm);
     if (result == COMPILE_ERROR) {
       fprintf(stderr, "compilation error\n");
@@ -77,14 +77,11 @@ static void repl(VM* vm, Compiler* compiler) {
 
 
 int main(int argc, char** argv) {
-  Chunk chunk;
-  initChunk(&chunk);
-
   Compiler compiler;
-  initCompiler(&compiler);
 
   VM vm;
-  initVM(&vm, &chunk, &compiler);
+  initVM(&vm, &compiler);
+  initCompiler(&vm, &compiler, TYPE_SCRIPT);
   
   if (argc == 1) {
     // run repl
@@ -94,7 +91,6 @@ int main(int argc, char** argv) {
     InterpretResult result = interpret(&vm, source);
     free((char*)source);
     source = NULL;
-    freeChunk(&chunk);
 
     if (result == COMPILE_ERROR) {
       fprintf(stderr, "compilation error\n");

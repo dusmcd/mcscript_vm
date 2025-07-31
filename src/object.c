@@ -1,3 +1,4 @@
+#include "chunk.h"
 #include <object.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -59,3 +60,16 @@ char* createString(const Expression* expr) {
   return chars;
 }
 
+ObjFunction* newFunction(VM* vm) {
+  ObjFunction* func = ALLOCATE(ObjFunction, 1);
+
+  if (func == NULL) return NULL;
+
+  func->name = NULL;
+  func->numArgs = 0;
+  initChunk(&func->chunk);
+
+  trackObject(vm, (Obj*)func);
+
+  return func;
+}

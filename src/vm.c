@@ -13,8 +13,7 @@
 #include <string.h>
 #include <table.h>
 
-void initVM(VM* vm, Chunk* chunk, Compiler* compiler) {
-  vm->chunk = chunk;
+void initVM(VM* vm, Compiler* compiler) {
   vm->stackTop = vm->valueStack;
 
   vm->objects = NULL;
@@ -32,6 +31,13 @@ static void freeObject(Obj* obj) {
       ObjString* str = (ObjString*)obj;
       FREE_ARRAY(char, str->str, str->length + 1);
       FREE(ObjString, str);
+      break;
+    }
+    case OBJ_FUNCTION: {
+      ObjFunction* func = (ObjFunction*)obj;
+      FREE_ARRAY(char, func->name, func->name->length + 1);
+      FREE(ObjString, func->name);
+      freeChunk(&CHUNK((*func)));
       break;
     }
   }
@@ -197,7 +203,7 @@ static InterpretResult run(VM* vm) {
 
 #define READ_BYTE() *(vm->ip++)
 #define READ_CONSTANT() \
-  (vm->chunk->constants.data[READ_BYTE()])
+  (CURRENT_CHUNK(vm).constants.data[READ_BYTE()])
 #define READ_SHORT() \
   (uint16_t)((vm->ip[0] << 8) | vm->ip[1])
 
@@ -209,7 +215,7 @@ static InterpretResult run(VM* vm) {
     printf(" ");
   }
   printf("]\n");
-  disassembleInstruction(vm->chunk, (int)(vm->ip - vm->chunk->code));
+  disassembleInstruction(&CURRENT_CHUNK(vm), (int)(vm->ip - CURRENT_CHUNK(vm).code));
 #endif
 
     switch(READ_BYTE()) {
@@ -370,14 +376,14 @@ InterpretResult interpret(VM* vm, const char* source) {
   Parser parser;
   Statements statements = parse(&parser, source);
 
-  if (!compile(vm, &statements)) {
+  if (compile(vm, &statements).hasError) {
     freeStatements(&statements);
     return COMPILE_ERROR;
   }
   freeStatements(&statements);
-  writeChunk(vm->chunk, OP_RETURN, 999);
+  writeChunk(&CURRENT_CHUNK(vm), OP_RETURN, 999);
 
   // setting instruction pointer to first instruction in chunk
-  vm->ip = vm->chunk->code;
+  vm->ip = CURRENT_CHUNK(vm).code;
   return run(vm);
 }

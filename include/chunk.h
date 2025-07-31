@@ -69,7 +69,7 @@ void writeChunk(Chunk* chunk, uint8_t byte, int line);
 int addConstant(Chunk* chunk, Value val);
 
 /**
- * free up dynamic arrays store on the heap
+ * free up dynamic arrays stored on the heap
  */
 void freeChunk(Chunk* chunk);
 
