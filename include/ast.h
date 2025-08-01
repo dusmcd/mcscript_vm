@@ -4,6 +4,8 @@
 #include <scanner.h>
 #include <stdbool.h>
 
+#define ARGS_MAX 255
+
 #define AS_EXPR_NUM(expr) expr.data.number
 #define AS_EXPR_INFIX(expr) expr.data.infix
 #define AS_EXPR_PREFIX(expr) expr.data.prefix
@@ -17,6 +19,7 @@
 #define AS_IFSTMT(stmt) stmt.data.ifStmt
 #define AS_WHILESTMT(stmt) stmt.data.whileStmt
 #define AS_ASSIGNSTMT(stmt) stmt.data.assignStmt
+#define AS_FUNCSTMT(stmt) stmt.data.funcStmt
 
 typedef struct expression Expression;
 typedef struct Statement Statement;
@@ -35,6 +38,7 @@ typedef enum {
   STMT_IF,
   STMT_WHILE,
   STMT_ASSIGN,
+  STMT_FUNCTION,
   STMT_NULL
 } StatementType;
 
@@ -177,6 +181,16 @@ typedef struct {
 } AssignStatement;
 
 /**
+ * declaring functions
+ */
+typedef struct {
+  Token token;
+  Expression args[ARGS_MAX];
+  BlockStatement block;
+  int argCount;
+} FunctionStatement;
+
+/**
  * all the structures for different statement types
  */
 typedef union {
@@ -187,6 +201,7 @@ typedef union {
   IfStatement ifStmt; // => STMT_IF
   WhileStatement whileStmt; // => STMT_WHILE
   AssignStatement assignStmt; // => STMT_ASSIGN
+  FunctionStatement funcStmt; // => STMT_FUNCTION
 } StatementData;
 
 /**

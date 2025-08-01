@@ -373,6 +373,45 @@ static AssignStatement parseAssignStatement(Parser* parser, Scanner* scanner) {
 
   return as;
 }
+static FunctionStatement parseFunctionStatement(Parser* parser, Scanner* scanner) {
+  FunctionStatement fs = {.token = parser->previous, .argCount = 0};
+
+  if (!expect(parser, scanner, TOKEN_LEFT_PAREN)) {
+    error(parser, "expected opening paren");
+    return (FunctionStatement){.token = {.type = TOKEN_NULL}};
+  }
+  
+  if (parser->current.type != TOKEN_RIGHT_PAREN) {
+    advance(parser, scanner);
+    Expression expr = parseExpression(parser, scanner, PREC_NONE);
+    if (expr.type == EXPR_ERROR) {
+      return (FunctionStatement){.token = {.type = TOKEN_NULL}};
+    }
+    fs.args[fs.argCount++] = expr;
+
+    while (parser->current.type == TOKEN_COMMA) {
+      advance(parser, scanner);
+      advance(parser, scanner);
+      Expression expr = parseExpression(parser, scanner, PREC_NONE);
+      if (expr.type == EXPR_ERROR) {
+        return (FunctionStatement){.token = {.type = TOKEN_NULL}};
+      }
+      fs.args[fs.argCount++] = expr;
+    }
+  }
+
+  // consume closing paren
+  advance(parser, scanner);
+
+  if (!expect(parser, scanner, TOKEN_LEFT_BRACE)) {
+    error(parser, "expected opening brace");
+    return (FunctionStatement){.token = {.type = TOKEN_NULL}};
+  }
+
+  fs.block = parseBlockStatement(parser, scanner);
+
+  return fs;
+}
 
 static Statement parseStatement(Parser* parser, Scanner* scanner) {
   Statement stmt;
@@ -412,6 +451,12 @@ static Statement parseStatement(Parser* parser, Scanner* scanner) {
       AssignStatement as = parseAssignStatement(parser, scanner);
       stmt.type = STMT_ASSIGN;
       stmt.data.assignStmt = as;
+      break;
+    }
+    case TOKEN_FUNCTION: {
+      FunctionStatement fs = parseFunctionStatement(parser, scanner);
+      stmt.type = STMT_FUNCTION;
+      stmt.data.funcStmt = fs;
       break;
     }
     case TOKEN_SEMICOLON:

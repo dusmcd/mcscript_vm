@@ -28,6 +28,7 @@ typedef enum {
  * data structure to keep track of local variables
  */
 struct Compiler {
+  Compiler* enclosing;
   Local locals[UINT8_COUNT];
   int localCount;
   int scopeDepth;

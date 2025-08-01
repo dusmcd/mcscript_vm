@@ -446,13 +446,27 @@ static bool compileStatement(VM* vm, const Statement* stmt) {
   return true;
 }
 
+static void emitReturn(VM* vm) {
+  writeChunk(&CURRENT_CHUNK(vm), OP_RETURN, 0);
+}
+
+static ObjFunction* endCompiler(VM* vm) {
+  emitReturn(vm);
+
+  ObjFunction* func = vm->compiler->func;
+  vm->compiler = vm->compiler->enclosing;
+
+  return func;
+}
+
 CompilerResult compile(VM* vm, const Statements* statements) {
   for (int i = 0; i < statements->count; i++) {
     Statement stmt = statements->stmts[i];
     bool isError = !compileStatement(vm, &stmt);
     if (isError) return (CompilerResult){.hasError = true};
   }
-  return (CompilerResult){.hasError = false, .func = vm->compiler->func};
+  emitReturn(vm);
+  return (CompilerResult){.hasError = false, .func = endCompiler(vm)};
 }
 
 void initCompiler(VM* vm, Compiler *compiler, FunctionType type) {
@@ -461,6 +475,8 @@ void initCompiler(VM* vm, Compiler *compiler, FunctionType type) {
 
   compiler->func = NULL;
   compiler->type = type;
+  compiler->enclosing = vm->compiler;
+  vm->compiler = compiler;
 
   compiler->func = newFunction(vm);
 

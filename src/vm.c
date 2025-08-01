@@ -15,9 +15,9 @@
 
 void initVM(VM* vm, Compiler* compiler) {
   vm->stackTop = vm->valueStack;
+  vm->compiler = compiler;
 
   vm->objects = NULL;
-  vm->compiler = compiler;
   initTable(&vm->globals);
 }
 
@@ -201,11 +201,12 @@ static bool concatenate(VM* vm) {
 
 static InterpretResult run(VM* vm) {
 
-#define READ_BYTE() *(vm->ip++)
+  CallFrame* frame = &vm->frame[vm->frameCount - 1];
+#define READ_BYTE() *(frame->ip++)
 #define READ_CONSTANT() \
-  (CURRENT_CHUNK(vm).constants.data[READ_BYTE()])
+  (frame->func->chunk.constants.data[READ_BYTE()])
 #define READ_SHORT() \
-  (uint16_t)((vm->ip[0] << 8) | vm->ip[1])
+  (uint16_t)((frame->ip[0] << 8) | frame->ip[1])
 
   while(true) {
 #ifdef DEBUG_STACK_TRACE
@@ -215,7 +216,7 @@ static InterpretResult run(VM* vm) {
     printf(" ");
   }
   printf("]\n");
-  disassembleInstruction(&CURRENT_CHUNK(vm), (int)(vm->ip - CURRENT_CHUNK(vm).code));
+  disassembleInstruction(&CURRENT_CHUNK(vm), (int)(frame->ip - frame->func->chunk.code));
 #endif
 
     switch(READ_BYTE()) {
@@ -317,41 +318,41 @@ static InterpretResult run(VM* vm) {
       }
       case OP_GET_LOCAL: {
         int index = (int)AS_NUMBER(pop(vm));
-        push(vm, vm->valueStack[index]);
+        push(vm, frame->basePointer[index]);
         break;
       }
       case OP_SET_LOCAL: {
         int index = (int)AS_NUMBER(pop(vm));
-        vm->valueStack[index] = pop(vm);
+        frame->basePointer[index] = pop(vm);
         break;
       }
       case OP_JUMP_IF_FALSE: {
         // creating 16-bit integer with arguments
         uint16_t offset = READ_SHORT();
-        vm->ip += 2;
+        frame->ip += 2;
         if (isFalsey(peek(vm, 1))) {
-          vm->ip += offset;
+          frame->ip += offset;
         }
         break;
       }
       case OP_JUMP_IF_TRUE: {
         uint16_t offset = READ_SHORT();
-        vm->ip += 2;
+        frame->ip += 2;
         if (!isFalsey(peek(vm, 1))) {
-          vm->ip += offset;
+          frame->ip += offset;
         }
         break;
       }
       case OP_LOOP: {
         uint16_t offset = READ_SHORT();
-        vm->ip += 2;
-        vm->ip -= offset;
+        frame->ip += 2;
+        frame->ip -= offset;
         break;
       }
       case OP_JUMP: {
         uint16_t offset = READ_SHORT();
-        vm->ip += 2;
-        vm->ip += offset;
+        frame->ip += 2;
+        frame->ip += offset;
         break;
       }
       case OP_POP:
@@ -381,9 +382,12 @@ InterpretResult interpret(VM* vm, const char* source) {
     return COMPILE_ERROR;
   }
   freeStatements(&statements);
-  writeChunk(&CURRENT_CHUNK(vm), OP_RETURN, 999);
 
-  // setting instruction pointer to first instruction in chunk
-  vm->ip = CURRENT_CHUNK(vm).code;
+  vm->frameCount = 1;
+  CallFrame* frame = &vm->frame[vm->frameCount - 1];
+  frame->basePointer = vm->valueStack;
+  frame->func = vm->compiler->func;
+  frame->ip = frame->func->chunk.code;
+
   return run(vm);
 }
