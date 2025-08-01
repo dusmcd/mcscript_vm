@@ -375,6 +375,10 @@ static AssignStatement parseAssignStatement(Parser* parser, Scanner* scanner) {
 }
 static FunctionStatement parseFunctionStatement(Parser* parser, Scanner* scanner) {
   FunctionStatement fs = {.token = parser->previous, .argCount = 0};
+  // consume function keyword
+  advance(parser, scanner);
+
+  fs.name = createName(parser);
 
   if (!expect(parser, scanner, TOKEN_LEFT_PAREN)) {
     error(parser, "expected opening paren");
@@ -383,20 +387,12 @@ static FunctionStatement parseFunctionStatement(Parser* parser, Scanner* scanner
   
   if (parser->current.type != TOKEN_RIGHT_PAREN) {
     advance(parser, scanner);
-    Expression expr = parseExpression(parser, scanner, PREC_NONE);
-    if (expr.type == EXPR_ERROR) {
-      return (FunctionStatement){.token = {.type = TOKEN_NULL}};
-    }
-    fs.args[fs.argCount++] = expr;
+    fs.args[fs.argCount++] = createName(parser);
 
     while (parser->current.type == TOKEN_COMMA) {
       advance(parser, scanner);
       advance(parser, scanner);
-      Expression expr = parseExpression(parser, scanner, PREC_NONE);
-      if (expr.type == EXPR_ERROR) {
-        return (FunctionStatement){.token = {.type = TOKEN_NULL}};
-      }
-      fs.args[fs.argCount++] = expr;
+      fs.args[fs.argCount++] = createName(parser);
     }
   }
 

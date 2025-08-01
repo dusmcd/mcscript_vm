@@ -578,6 +578,81 @@ static void testWhileStatement() {
   puts("testWhileStatement() passed");
 }
 
+static void testFunctionStatement() {
+  Test test = {
+    .count = 2,
+    .tests = {"function doStuff(a){10;}", "function doStuff(a, b){10;}"},
+    .expectedNums = {1, 2},
+    .expectedArgs = {"a", "b"}
+  };
+  Parser parser;
+
+  for (int i = 0; i < test.count; i++) {
+    const char* src = test.tests[i];
+    Statements stmts = parse(&parser, src);
+
+    if (stmts.count != 1) {
+      fprintf(stderr, "stmts does not contain 1 statement. got=%d\n",
+          stmts.count);
+      return;
+    }
+
+    Statement stmt = stmts.stmts[0];
+    if (stmt.type != STMT_FUNCTION) {
+      fprintf(stderr, "stmt is not STMT_FUNCTION\n");
+      return;
+    }
+
+    FunctionStatement fs = AS_FUNCSTMT(stmt);
+
+    if (memcmp(fs.name.start, "doStuff", fs.name.length) != 0) {
+      fprintf(stderr, "fs.name does not equal doStuff. got=%.*s\n",
+          fs.name.length, fs.name.start);
+      return;
+    }
+
+    if (fs.argCount != test.expectedNums[i]) {
+      fprintf(stderr, "wrong number of arguments. expected=%d, got=%d\n",
+          test.expectedNums[i], fs.argCount);
+      return;
+    }
+
+    for (int j = 0; j < test.expectedNums[i]; j++) {
+      Identifier arg = fs.args[j];
+      if (memcmp(arg.start, test.expectedArgs[j], arg.length) != 0) {
+        fprintf(stderr, "arg identifier is wrong. expected=%s, got=%.*s\n",
+            test.expectedArgs[j], arg.length, arg.start);
+        return;
+      }
+    }
+
+    BlockStatement block = fs.block;
+    Statements inner = block.stmts;
+
+    if (inner.count != 1) {
+      fprintf(stderr, "inner does not contain 1 statement. got=%d\n",
+          inner.count);
+      return;
+    }
+
+    Statement innerStmt = inner.stmts[0];
+    if (innerStmt.type != STMT_EXPR) {
+      fprintf(stderr, "innerStmt is not STMT_EXPR\n");
+      return;
+    }
+
+    Expression expr = AS_EXPRSTMT(innerStmt).expression;
+
+    if (!testNumber(expr, 10.0)) {
+      return;
+    }
+    freeStatements(&inner);
+    freeStatements(&stmts);
+  }
+
+  puts("testFunctionStatement() passed");
+}
+
 void testParser() {
   printf("=== Parser Tests ===\n");
   testReturnStmt();
@@ -592,5 +667,6 @@ void testParser() {
   testBlockStmt();
   testIfStatement();
   testWhileStatement();
+  testFunctionStatement();
   printf("\n");
 }

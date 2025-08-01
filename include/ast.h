@@ -185,9 +185,10 @@ typedef struct {
  */
 typedef struct {
   Token token;
-  Expression args[ARGS_MAX];
+  Identifier args[ARGS_MAX];
   BlockStatement block;
   int argCount;
+  Identifier name;
 } FunctionStatement;
 
 /**

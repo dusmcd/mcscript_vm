@@ -10,6 +10,7 @@ typedef struct {
   const char* tests[NUM_TESTS];
   int expectedNums[NUM_TESTS];
   TokenType expectedOp[NUM_TESTS];
+  const char* expectedArgs[NUM_TESTS];
 } Test;
 
 void testParser();
