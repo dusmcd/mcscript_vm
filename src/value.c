@@ -31,6 +31,12 @@ static void printObject(ObjType type, Value val) {
     case OBJ_STRING: {
       char* str = AS_CSTRING(val);
       printf("%s", str);
+      break;
+    }
+    case OBJ_FUNCTION: {
+      ObjFunction* func = AS_FUNC(val);
+      printf("function<%s>", func->name->str);
+      break;
     }
   }
 }

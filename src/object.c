@@ -67,6 +67,7 @@ ObjFunction* newFunction(VM* vm) {
 
   func->name = NULL;
   func->numArgs = 0;
+  func->obj.type = OBJ_FUNCTION;
   initChunk(&func->chunk);
 
   trackObject(vm, (Obj*)func);

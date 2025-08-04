@@ -35,8 +35,10 @@ static void freeObject(Obj* obj) {
     }
     case OBJ_FUNCTION: {
       ObjFunction* func = (ObjFunction*)obj;
-      FREE_ARRAY(char, func->name, func->name->length + 1);
-      FREE(ObjString, func->name);
+      if (func->name != NULL) {
+        freeObject((Obj*)func->name);
+      }
+      FREE(ObjFunction, func);
       freeChunk(&CHUNK((*func)));
       break;
     }

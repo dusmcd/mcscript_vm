@@ -1,3 +1,4 @@
+#include "vm.h"
 #include <memory.h>
 #include <ast.h>
 #include <value.h>
@@ -16,9 +17,26 @@ static bool compileExpression(VM*, Expression*);
 static bool compileStatement(VM* vm, const Statement* stmt);
 static int emitJumpInstruction(VM* vm, uint8_t instr, int line);
 static void patchJump(VM* vm, int offset);
+static ObjFunction* endCompiler(VM* vm);
 
 static void error(const char* msg, int line) {
   fprintf(stderr, "[line %d] ERROR: %s\n", line, msg);
+}
+
+static void beginScope(VM* vm) {
+  vm->compiler->scopeDepth++;
+}
+
+static void endScope(VM* vm) {
+  vm->compiler->scopeDepth--;
+  Compiler* compiler = vm->compiler;
+
+  while(compiler->localCount > 0 &&
+      compiler->locals[compiler->localCount - 1].depth >
+        compiler->scopeDepth) {
+    writeChunk(&CURRENT_CHUNK(vm), OP_POP, 0);
+    compiler->localCount--;
+  }
 }
 
 static bool compilePrefix(VM* vm, Prefix* prefix) {
@@ -261,14 +279,14 @@ static bool addLocal(VM* vm, Token name) {
   return true;
 }
 
-static bool compileDeclaration(VM* vm, const Statement* stmt, Identifier ident) {
+static bool compileDeclaration(VM* vm, int line, Identifier ident) {
   bool isLocal = vm->compiler->scopeDepth > 0;
 
   if (!isLocal) {
     char* name = createName(&ident);
     Obj* obj = (Obj*)allocateString(vm, name);
     Value val = OBJ_VAL(obj);
-    writeConstant(&CURRENT_CHUNK(vm), val, stmt->data.varStmt.token.line);
+    writeConstant(&CURRENT_CHUNK(vm), val, line);
   }
   
   // if scope depth is greater than zero, then variable is local
@@ -277,7 +295,7 @@ static bool compileDeclaration(VM* vm, const Statement* stmt, Identifier ident) 
     return addLocal(vm, ident.token);
   }
 
-  writeChunk(&CURRENT_CHUNK(vm), OP_DEFINE_GLOBAL, stmt->data.varStmt.token.line);
+  writeChunk(&CURRENT_CHUNK(vm), OP_DEFINE_GLOBAL, line);
   return true;
 }
 
@@ -289,27 +307,17 @@ static bool compileVarStatement(VM* vm, const Statement* stmt) {
     return false;
   }
 
-  return compileDeclaration(vm, stmt, ident);
+  return compileDeclaration(vm, stmt->data.varStmt.token.line, ident);
 }
 
 static bool compileBlockStatement(VM* vm, const Statement* stmt) {
-  vm->compiler->scopeDepth++;
   Statements stmts = AS_BLOCKSTMT((*stmt)).stmts;
 
   for (int i = 0; i < stmts.count; i++) {
     Statement inner = stmts.stmts[i];
     if (!compileStatement(vm, &inner)) return false;
   }
-
-  vm->compiler->scopeDepth--;
-  Compiler* compiler = vm->compiler;
-  while(compiler->localCount > 0 &&
-      compiler->locals[compiler->localCount - 1].depth >
-        compiler->scopeDepth) {
-    writeChunk(&CURRENT_CHUNK(vm), OP_POP, 0);
-    compiler->localCount--;
-  }
-
+  
   return true;
 }
 
@@ -392,7 +400,7 @@ static bool compileWhileStatement(VM* vm, const Statement* stmt) {
 
   writeChunk(&CURRENT_CHUNK(vm), OP_POP, ws.token.line);
   Statement block = {.type = STMT_BLOCK, .data = {.blockStmt = ws.block}};
-  if (!compileBlockStatement(vm, &block)) {
+  if (!compileStatement(vm, &block)) {
     return false;
   }
   emitLoop(vm, loopStart, ws.token.line);
@@ -416,6 +424,43 @@ static bool compileAssignStatement(VM* vm, const Statement* stmt) {
   return true;
 }
 
+static bool compileFunction(VM* vm, const FunctionStatement* fs) {
+  Compiler compiler;
+  initCompiler(vm, &compiler, TYPE_FUNCTION);
+  vm->compiler->func->numArgs = fs->argCount;
+  char* str = createName(&fs->name);
+  vm->compiler->func->name = allocateString(vm, str);
+
+  beginScope(vm);
+
+  // compile args and block
+  for (int i = 0; i < fs->argCount; i++) {
+    if (!compileDeclaration(vm, fs->token.line, fs->args[i])) return false;
+  }
+
+  Statement block = {.data = {.blockStmt = fs->block}, .type = STMT_BLOCK};
+  if (!compileBlockStatement(vm, &block)) return false;
+  
+  ObjFunction* func = endCompiler(vm);
+  writeConstant(&CURRENT_CHUNK(vm), OBJ_VAL(func), fs->token.line);
+
+  return true;
+}
+
+static bool compileFunctionStatement(VM* vm, const Statement* stmt) {
+  FunctionStatement fs = AS_FUNCSTMT((*stmt));
+
+  if (!compileFunction(vm, &fs)) {
+    return false;
+  }
+
+  if (!compileDeclaration(vm, fs.token.line, fs.name)) {
+    return false;
+  }
+
+  return true;
+}
+
 static bool compileStatement(VM* vm, const Statement* stmt) {
   switch(stmt->type) {
     case STMT_RETURN:
@@ -432,13 +477,19 @@ static bool compileStatement(VM* vm, const Statement* stmt) {
       return result;
     }
     case STMT_BLOCK: {
-      return compileBlockStatement(vm, stmt);
+      beginScope(vm);
+      bool result = compileBlockStatement(vm, stmt);
+      endScope(vm);
+      return result;
     }
     case STMT_IF: {
       return compileIfStatement(vm, stmt);
     }
     case STMT_WHILE: {
       return compileWhileStatement(vm, stmt);
+    }
+    case STMT_FUNCTION: {
+      return compileFunctionStatement(vm, stmt);
     }
     case STMT_NULL:
       return true;
