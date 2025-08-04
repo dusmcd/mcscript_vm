@@ -1,3 +1,4 @@
+#include <ast.h>
 #include <scanner.h>
 #include <parser.h>
 #include <stdbool.h>
@@ -42,6 +43,54 @@ static Expression identifier(Parser* parser, Scanner* scanner) {
   return expr;
 }
 
+static bool parseCallParams(Parser* parser, Scanner* scanner, CallExpression* ce) {
+  ce->capacity = GROW_CAPACITY(0);
+  ce->args = GROW_ARRAY(Expression, ce->args, 0, ce->capacity);
+
+  Expression expr = parseExpression(parser, scanner, PREC_NONE);
+  if (expr.type == EXPR_ERROR) return false;
+  ce->args[ce->argCount++] = expr;
+  
+  while (parser->current.type == TOKEN_COMMA) {
+    advance(parser, scanner);
+    advance(parser, scanner);
+
+    if (ce->capacity < ce->argCount + 1) {
+      int oldCapacity = ce->capacity;
+      ce->capacity = GROW_CAPACITY(oldCapacity);
+      ce->args = GROW_ARRAY(Expression, ce->args, oldCapacity, ce->capacity);
+    }
+
+    expr = parseExpression(parser, scanner, PREC_NONE);
+    if (expr.type == EXPR_ERROR) {
+      return false;
+    }
+    ce->args[ce->argCount++] = expr;
+  }
+
+  return true;
+}
+
+static Expression call(Parser* parser, Scanner* scanner, Expression expr) {
+  CallExpression ce = {
+    .token = parser->previous,
+    .name = expr.data.identifier,
+    .argCount = 0
+  };
+
+  if (parser->current.type != TOKEN_RIGHT_PAREN) {
+    advance(parser, scanner);
+    if (!parseCallParams(parser, scanner, &ce)) {
+      return (Expression){.type = EXPR_ERROR};
+    }
+  }
+
+  // consume closing paren
+  advance(parser, scanner);
+
+  Expression resultExpr = {.type = EXPR_CALL, .data = {.call = ce}};
+  return resultExpr;
+}
 
 const ParserRule rules[] = {
   [TOKEN_NUMBER] = {number, NULL, PREC_NONE},
@@ -50,7 +99,7 @@ const ParserRule rules[] = {
   [TOKEN_STAR] = {NULL, binary, PREC_FACTOR},
   [TOKEN_SLASH] = {NULL, binary, PREC_FACTOR},
   [TOKEN_BANG] = {unary, NULL, PREC_UNARY},
-  [TOKEN_LEFT_PAREN] = {grouped, NULL, PREC_NONE},
+  [TOKEN_LEFT_PAREN] = {grouped, call, PREC_CALL},
   [TOKEN_RIGHT_PAREN] = {NULL, NULL, PREC_NONE},
   [TOKEN_TRUE] = {boolean, NULL, PREC_NONE},
   [TOKEN_FALSE] = {boolean, NULL, PREC_NONE},
@@ -444,6 +493,13 @@ static Statement parseStatement(Parser* parser, Scanner* scanner) {
       break;
     }
     case TOKEN_IDENTIFIER: {
+      if (parser->current.type == TOKEN_LEFT_PAREN) {
+        ExpressionStatement es = parseExpressionStatement(parser, scanner);
+        stmt.type = STMT_EXPR;
+        stmt.data.expressionStmt = es;
+        break;
+      }
+
       AssignStatement as = parseAssignStatement(parser, scanner);
       stmt.type = STMT_ASSIGN;
       stmt.data.assignStmt = as;
@@ -548,6 +604,14 @@ void freeGrouped(Group* group) {
   }
 }
 
+static void freeCall(CallExpression* call) {
+  for (int i = 0; i < call->argCount; i++) {
+    freeExpression(call->args + i);
+  }
+  FREE_ARRAY(Expression, call->args, call->capacity);
+  call->args = NULL;
+}
+
 void freeExpression(Expression* expr) {
   switch(expr->type) {
     case EXPR_PREFIX:
@@ -562,6 +626,9 @@ void freeExpression(Expression* expr) {
     case EXPR_GROUP:
       freeExpression(expr->data.group.expr);
       freeGrouped(&expr->data.group);
+      break;
+    case EXPR_CALL:
+      freeCall(&expr->data.call);
       break;
     default:
       return;

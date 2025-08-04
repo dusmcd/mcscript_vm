@@ -6,9 +6,9 @@
 #include <value.h>
 #include <table.h>
 
-#define STACK_MAX 256
 #define CURRENT_CHUNK(vm) vm->compiler->func->chunk
 #define FRAMES_MAX 64
+#define STACK_MAX 256 * FRAMES_MAX
 
 typedef struct Compiler Compiler;
 typedef struct ObjFunction ObjFunction;

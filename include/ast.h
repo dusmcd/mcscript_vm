@@ -50,6 +50,7 @@ typedef enum {
   EXPR_BOOL,
   EXPR_STRING,
   EXPR_IDENT,
+  EXPR_CALL,
   EXPR_ERROR,
   EXPR_NULL
 } ExpressionType;
@@ -98,6 +99,14 @@ typedef struct {
   const char* start;
 } Identifier;
 
+typedef struct {
+  int argCount;
+  int capacity;
+  Token token;
+  Identifier name;
+  Expression* args; 
+} CallExpression;
+
 /**
  * all the structures for different expression types
  */
@@ -109,6 +118,7 @@ typedef union {
   Boolean boolean; // => EXPR_BOOL
   String string; // => EXPR_STRING
   Identifier identifier; // => EXPR_IDENT
+  CallExpression call; // => EXPR_CALL
 } ExpressionData;
 
 /**

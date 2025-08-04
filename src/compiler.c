@@ -355,7 +355,7 @@ static bool compileIfStatement(VM* vm, const Statement* stmt) {
   writeChunk(&CURRENT_CHUNK(vm), OP_POP, is.token.line);
 
   Statement block = {.type = STMT_BLOCK, .data = {.blockStmt = is.block}};
-  if (!compileBlockStatement(vm, &block)) {
+  if (!compileStatement(vm, &block)) {
     return false;
   }
 
