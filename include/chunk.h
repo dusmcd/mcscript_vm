@@ -33,6 +33,7 @@ typedef enum {
   OP_JUMP_IF_FALSE,
   OP_JUMP_IF_TRUE,
   OP_LOOP,
+  OP_CALL,
   OP_POP,
   OP_NULL,
   OP_RETURN // return instruction (i.e., pop function off stack and return to next instruction)

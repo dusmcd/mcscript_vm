@@ -12,6 +12,7 @@
 #define AS_EXPR_GROUP(expr) expr.data.group
 #define AS_EXPR_IDENT(expr) expr.data.identifier
 #define AS_EXPR_BOOL(expr) expr.data.boolean
+#define AS_EXPR_CALL(expr) expr.data.call
 
 #define AS_VARSTMT(stmt) stmt.data.varStmt
 #define AS_BLOCKSTMT(stmt) stmt.data.blockStmt

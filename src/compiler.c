@@ -173,7 +173,8 @@ static int resolveLocal(VM* vm, Identifier ident) {
       const char* identStart = ident.token.start;
       int length = ident.token.length;
       if (memcmp(localStart, identStart, length) == 0) {
-        return i;
+        // accounting for first slot being used by compiler
+        return i - 1;
       } 
     }
   }
@@ -203,6 +204,24 @@ static bool compileIdentifier(VM* vm, Identifier ident, bool assign) {
   }
 
   writeChunk(&CURRENT_CHUNK(vm), opCode, ident.token.line);
+  return true;
+}
+
+static bool compileCallExpression(VM* vm, const CallExpression* call) {
+
+  for (int i = 0; i < call->argCount; i++) {
+    if (!compileExpression(vm, call->args + i)) {
+      return false;
+    }
+  }
+
+  if (!compileIdentifier(vm, call->name, false)) {
+    error("insufficient memory", call->token.line);
+    return false;
+  }
+
+  writeChunk(&CURRENT_CHUNK(vm), OP_CALL, call->token.line);
+
   return true;
 }
 
@@ -245,6 +264,11 @@ static bool compileExpression(VM* vm, Expression* expr) {
         error("insufficient memory", ident.token.line);
         return false;
       }
+      break;
+    }
+    case EXPR_CALL: {
+      CallExpression call = AS_EXPR_CALL((*expr));
+      if (!compileCallExpression(vm, &call)) return false;
       break;
     }
     case EXPR_ERROR:

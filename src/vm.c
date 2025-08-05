@@ -13,12 +13,29 @@
 #include <string.h>
 #include <table.h>
 
+const char* funcName = NULL;
+
 void initVM(VM* vm, Compiler* compiler) {
   vm->stackTop = vm->valueStack;
   vm->compiler = compiler;
 
   vm->objects = NULL;
   initTable(&vm->globals);
+}
+
+static void printFuncName(const CallFrame* frame) {
+  if (funcName == NULL) {
+    funcName = "script";
+    printf("<%s>\n", funcName);
+    return;
+  }
+
+  const char* current = frame->func->name == NULL ? "script" : frame->func->name->str;
+  if (strcmp(funcName, current) != 0) {
+    funcName = current;
+    printf("<%s>\n", funcName);
+    return;
+  }
 }
 
 void resetVM(VM* vm) {
@@ -200,6 +217,27 @@ static bool concatenate(VM* vm) {
   return true;
 }
 
+static bool call(VM* vm) {
+  Value val = peek(vm, 1);
+  if (!(IS_OBJ(val))) {
+    error("value being called must be a function object");
+    return false;
+  }
+  if (!(IS_FUNC(val))) {
+    error("value being called must be a function object");
+    return false;
+  }
+  pop(vm);
+
+  vm->frameCount++;
+  CallFrame* newFrame = &vm->frame[vm->frameCount - 1];
+  newFrame->func = AS_FUNC(val);
+  newFrame->ip = newFrame->func->chunk.code;
+  newFrame->basePointer = vm->stackTop - newFrame->func->numArgs;
+
+  return true;
+}
+
 
 static InterpretResult run(VM* vm) {
 
@@ -211,14 +249,17 @@ static InterpretResult run(VM* vm) {
   (uint16_t)((frame->ip[0] << 8) | frame->ip[1])
 
   while(true) {
+    frame = &vm->frame[vm->frameCount - 1];
+
 #ifdef DEBUG_STACK_TRACE
+  printFuncName(frame);
   printf("[ ");
   for (Value* val = vm->valueStack; val < vm->stackTop; val++) {
     printValue(*val);
     printf(" ");
   }
   printf("]\n");
-  disassembleInstruction(&CURRENT_CHUNK(vm), (int)(frame->ip - frame->func->chunk.code));
+  disassembleInstruction(&frame->func->chunk, (int)(frame->ip - frame->func->chunk.code));
 #endif
 
     switch(READ_BYTE()) {
@@ -328,6 +369,16 @@ static InterpretResult run(VM* vm) {
         frame->basePointer[index] = pop(vm);
         break;
       }
+      case OP_CALL: {
+        // create a new call frame, the function object
+        // should be on the top of the stack
+        // the base pointer should be the address of the first arg (if any)
+        // the top of the stack will be one past the last arg
+        if (!call(vm)) {
+          return RUNTIME_ERROR;
+        }
+        break;
+      }
       case OP_JUMP_IF_FALSE: {
         // creating 16-bit integer with arguments
         uint16_t offset = READ_SHORT();
@@ -361,11 +412,12 @@ static InterpretResult run(VM* vm) {
         pop(vm);
         break;
       case OP_RETURN:
-        if (vm->stackTop > vm->valueStack) {
-          printValue(pop(vm));
-          printf("\n");
+        if (vm->frameCount - 1 == 0) {
+          return INTERPRET_OK;
         }
-        return INTERPRET_OK;
+        vm->frameCount--;
+        vm->stackTop = frame->basePointer;
+        break;
     }
   }
 

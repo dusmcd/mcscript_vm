@@ -84,6 +84,8 @@ int disassembleInstruction(Chunk* chunk, int offset) {
       return simpleInstruction("OP_SET_GLOBAL", offset);
     case OP_SET_LOCAL:
       return simpleInstruction("OP_SET_LOCAL", offset);
+    case OP_CALL:
+      return simpleInstruction("OP_CALL", offset);
     case OP_NULL:
       return simpleInstruction("OP_NULL", offset);
     default:
