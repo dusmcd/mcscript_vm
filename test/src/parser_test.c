@@ -580,9 +580,9 @@ static void testWhileStatement() {
 
 static void testFunctionStatement() {
   Test test = {
-    .count = 2,
-    .tests = {"function doStuff(a){10;}", "function doStuff(a, b){10;}"},
-    .expectedNums = {1, 2},
+    .count = 3,
+    .tests = {"function doStuff(a){10;}", "function doStuff(a, b){10;}", "function doStuff(){10;}"},
+    .expectedNums = {1, 2, 0},
     .expectedArgs = {"a", "b"}
   };
   Parser parser;
@@ -653,6 +653,57 @@ static void testFunctionStatement() {
   puts("testFunctionStatement() passed");
 }
 
+static void testCallExpression() {
+  Parser parser;
+  Test test = {.count = 2, .tests = {"add();", "add(10, 10);"}, .expectedNums = {0, 2}};
+
+  for (int i = 0; i < test.count; i++) {
+    const char* src = test.tests[i];
+    Statements stmts = parse(&parser, src);
+
+    if (stmts.count != 1) {
+      fprintf(stderr, "stmts does not contain 1 statement. got=%d\n",
+          stmts.count);
+      return;
+    }
+
+    Statement stmt = stmts.stmts[0];
+    if (stmt.type != STMT_EXPR) {
+      fprintf(stderr, "stmt is not STMT_EXPR\n");
+      return;
+    }
+
+    Expression expr = AS_EXPRSTMT(stmt).expression;
+    if (expr.type != EXPR_CALL) {
+      fprintf(stderr, "expr is not EXPR_CALL\n");
+      return;
+    }
+
+
+    CallExpression call = expr.data.call;
+    if (call.argCount != test.expectedNums[i]) {
+      fprintf(stderr, "argCount wrong. expected=%d got=%d\n",
+          test.expectedNums[i], call.argCount);
+      return;
+    }
+
+    if (memcmp(call.name.start, "add", 3) != 0) {
+      fprintf(stderr, "call name does not equal add. got=%.*s\n",
+          call.name.length, call.name.start);
+      return;
+    }
+
+    for (int j = 0; j < call.argCount; j++) {
+      if (!testNumber(call.args[j], 10.0)) {
+        return;
+      }
+    }
+    freeStatements(&stmts);
+  }
+
+  puts("testCallExpression() passed");
+}
+
 void testParser() {
   printf("=== Parser Tests ===\n");
   testReturnStmt();
@@ -668,5 +719,6 @@ void testParser() {
   testIfStatement();
   testWhileStatement();
   testFunctionStatement();
+  testCallExpression();
   printf("\n");
 }
