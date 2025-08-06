@@ -18,6 +18,7 @@ static bool compileStatement(VM* vm, const Statement* stmt);
 static int emitJumpInstruction(VM* vm, uint8_t instr, int line);
 static void patchJump(VM* vm, int offset);
 static ObjFunction* endCompiler(VM* vm);
+static bool compileIdentifier(VM* vm, Identifier ident, bool assign);
 
 static void error(const char* msg, int line) {
   fprintf(stderr, "[line %d] ERROR: %s\n", line, msg);
@@ -39,6 +40,14 @@ static void endScope(VM* vm) {
   }
 }
 
+static void compileReturnVal(VM* vm, const Expression* expr) {
+  if (expr->type == EXPR_CALL) {
+    Token tok = {.type = TOKEN_IDENTIFIER, .length = 6, .start = "return"};
+    Identifier ident = {.length = 6, .token = tok, .start = "return"};
+    compileIdentifier(vm, ident, false);
+  }
+}
+
 static bool compilePrefix(VM* vm, Prefix* prefix) {
   if (prefix->operator == TOKEN_MINUS) {
     compileExpression(vm, prefix->expression);
@@ -56,6 +65,8 @@ static bool compilePrefix(VM* vm, Prefix* prefix) {
     return false;
   }
 
+  compileReturnVal(vm, prefix->expression);
+
   return true;
 }
 
@@ -63,12 +74,14 @@ static bool compileAndExpression(VM* vm, Infix* infix) {
   if (!compileExpression(vm, infix->left)) {
     return false;
   }
+  compileReturnVal(vm, infix->left);
   int leftOffset = emitJumpInstruction(vm, OP_JUMP_IF_FALSE, infix->token.line);
 
   writeChunk(&CURRENT_CHUNK(vm), OP_POP, 0);
   if (!compileExpression(vm, infix->right)) {
     return false;
   }
+  compileReturnVal(vm, infix->right);
   
   patchJump(vm, leftOffset);
 
@@ -79,12 +92,15 @@ static bool compileOrExpression(VM* vm, Infix* infix) {
   if (!compileExpression(vm, infix->left)) {
     return false;
   }
+  compileReturnVal(vm, infix->left);
   int leftOffset = emitJumpInstruction(vm, OP_JUMP_IF_TRUE, infix->token.line);
 
   writeChunk(&CURRENT_CHUNK(vm), OP_POP, 0);
   if (!compileExpression(vm, infix->right)) {
     return false;
   }
+  compileReturnVal(vm, infix->right);
+
 
   patchJump(vm, leftOffset);
   return true;
@@ -100,7 +116,10 @@ static bool compileInfix(VM* vm, Infix* infix) {
   }
 
   if (!compileExpression(vm, infix->left)) return false;
+  compileReturnVal(vm, infix->left);
+
   if (!compileExpression(vm, infix->right)) return false;
+  compileReturnVal(vm, infix->right);
 
   switch(infix->operator) {
     case TOKEN_PLUS: {
@@ -213,6 +232,8 @@ static bool compileCallExpression(VM* vm, const CallExpression* call) {
     if (!compileExpression(vm, call->args + i)) {
       return false;
     }
+    compileReturnVal(vm, call->args + i);
+    writeChunk(&CURRENT_CHUNK(vm), OP_MARK_LOCAL, call->token.line);
   }
 
   if (!compileIdentifier(vm, call->name, false)) {
@@ -221,6 +242,7 @@ static bool compileCallExpression(VM* vm, const CallExpression* call) {
   }
 
   writeChunk(&CURRENT_CHUNK(vm), OP_CALL, call->token.line);
+  writeChunk(&CURRENT_CHUNK(vm), (uint8_t)call->argCount, call->token.line);
 
   return true;
 }
@@ -238,7 +260,9 @@ static bool compileExpression(VM* vm, Expression* expr) {
     }
     case EXPR_GROUP: {
       Group group = AS_EXPR_GROUP((*expr));
-      if (compileExpression(vm, group.expr)) break;
+      if (compileExpression(vm, group.expr)){
+        break;
+      }
       return false;
     }
     case EXPR_NUMBER: {
@@ -289,7 +313,7 @@ static bool compileExpression(VM* vm, Expression* expr) {
   return true;
 }
 
-static bool addLocal(VM* vm, Token name) {
+static bool addLocal(VM* vm, Token name, bool isArg) {
   Compiler* compiler = vm->compiler;
   Local* local = &compiler->locals[compiler->localCount++];
   local->name = name;
@@ -300,10 +324,14 @@ static bool addLocal(VM* vm, Token name) {
     return false;
   }
 
+  if (!isArg) {
+    writeChunk(&CURRENT_CHUNK(vm), OP_MARK_LOCAL, name.line);
+  }
+
   return true;
 }
 
-static bool compileDeclaration(VM* vm, int line, Identifier ident) {
+static bool compileDeclaration(VM* vm, int line, Identifier ident, bool isArg) {
   bool isLocal = vm->compiler->scopeDepth > 0;
 
   if (!isLocal) {
@@ -316,7 +344,7 @@ static bool compileDeclaration(VM* vm, int line, Identifier ident) {
   // if scope depth is greater than zero, then variable is local
   // so we do not want to create a global instruction
   if (isLocal) {
-    return addLocal(vm, ident.token);
+    return addLocal(vm, ident.token, isArg);
   }
 
   writeChunk(&CURRENT_CHUNK(vm), OP_DEFINE_GLOBAL, line);
@@ -330,8 +358,9 @@ static bool compileVarStatement(VM* vm, const Statement* stmt) {
   if (!compileExpression(vm, &expr)) {
     return false;
   }
+  compileReturnVal(vm, &expr);
 
-  return compileDeclaration(vm, stmt->data.varStmt.token.line, ident);
+  return compileDeclaration(vm, stmt->data.varStmt.token.line, ident, false);
 }
 
 static bool compileBlockStatement(VM* vm, const Statement* stmt) {
@@ -374,6 +403,7 @@ static bool compileIfStatement(VM* vm, const Statement* stmt) {
   if (!compileExpression(vm, &is.condition)) {
     return false;
   }
+  compileReturnVal(vm, &is.condition);
 
   int thenOffset = emitJumpInstruction(vm, OP_JUMP_IF_FALSE, is.token.line);
   writeChunk(&CURRENT_CHUNK(vm), OP_POP, is.token.line);
@@ -420,6 +450,7 @@ static bool compileWhileStatement(VM* vm, const Statement* stmt) {
   if (!compileExpression(vm, &ws.condition)) {
     return false;
   }
+  compileReturnVal(vm, &ws.condition);
   int exitOffset = emitJumpInstruction(vm, OP_JUMP_IF_FALSE, ws.token.line);
 
   writeChunk(&CURRENT_CHUNK(vm), OP_POP, ws.token.line);
@@ -440,6 +471,7 @@ static bool compileAssignStatement(VM* vm, const Statement* stmt) {
   if (!compileExpression(vm, &as.value)) {
     return false;
   }
+  compileReturnVal(vm, &as.value);
 
   if (!compileIdentifier(vm, as.name, true)) {
     return false;
@@ -459,7 +491,7 @@ static bool compileFunction(VM* vm, const FunctionStatement* fs) {
 
   // compile args and block
   for (int i = 0; i < fs->argCount; i++) {
-    if (!compileDeclaration(vm, fs->token.line, fs->args[i])) return false;
+    if (!compileDeclaration(vm, fs->token.line, fs->args[i], true)) return false;
   }
 
   Statement block = {.data = {.blockStmt = fs->block}, .type = STMT_BLOCK};
@@ -478,7 +510,7 @@ static bool compileFunctionStatement(VM* vm, const Statement* stmt) {
     return false;
   }
 
-  if (!compileDeclaration(vm, fs.token.line, fs.name)) {
+  if (!compileDeclaration(vm, fs.token.line, fs.name, false)) {
     return false;
   }
 
@@ -522,6 +554,7 @@ static bool compileStatement(VM* vm, const Statement* stmt) {
 }
 
 static void emitReturn(VM* vm) {
+  writeChunk(&CURRENT_CHUNK(vm), OP_NULL, 0);
   writeChunk(&CURRENT_CHUNK(vm), OP_RETURN, 0);
 }
 

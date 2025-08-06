@@ -64,7 +64,6 @@ static void repl(VM* vm, Compiler* compiler) {
 
     InterpretResult result = interpret(vm, line);
     freeChunk(&CURRENT_CHUNK(vm));
-    resetVM(vm);
     if (result == COMPILE_ERROR) {
       fprintf(stderr, "compilation error\n");
     }

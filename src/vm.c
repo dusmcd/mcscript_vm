@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include <value.h>
 #include <chunk.h>
 #include <common.h>
@@ -15,12 +16,25 @@
 
 const char* funcName = NULL;
 
+static void setReturnVal(VM* vm, Value val) {
+  const char* temp = "return";
+  int length = strlen(temp) + 1;
+  char* str = ALLOCATE(char, length);
+  strcpy(str, temp);
+  str[length] = '\0';
+
+  ObjString* key = allocateString(vm, str);
+  tableSet(&vm->globals, key, val);
+}
+
 void initVM(VM* vm, Compiler* compiler) {
   vm->stackTop = vm->valueStack;
   vm->compiler = compiler;
 
   vm->objects = NULL;
   initTable(&vm->globals);
+  setReturnVal(vm, NULL_VAL);
+
 }
 
 static void printFuncName(const CallFrame* frame) {
@@ -88,6 +102,8 @@ static void error(const char* msg) {
   fprintf(stderr, "ERROR: %s\n", msg);
 }
 
+
+
 void push(VM* vm, Value val) {
   *(vm->stackTop) = val;
   vm->stackTop++;
@@ -99,7 +115,8 @@ static Value peek(VM* vm, int offset) {
 
 Value pop(VM* vm) {
   vm->stackTop--;
-  return (*vm->stackTop);
+  Value* top = vm->stackTop;
+  return *top;
 }
 
 static bool isFalsey(Value val) {
@@ -217,7 +234,7 @@ static bool concatenate(VM* vm) {
   return true;
 }
 
-static bool call(VM* vm) {
+static bool call(VM* vm, uint8_t callArgs) {
   Value val = peek(vm, 1);
   if (!(IS_OBJ(val))) {
     error("value being called must be a function object");
@@ -227,17 +244,40 @@ static bool call(VM* vm) {
     error("value being called must be a function object");
     return false;
   }
-  pop(vm);
+
+  ObjFunction* func = AS_FUNC(val);
+  if (func->numArgs != callArgs) {
+    error("wrong number of args");
+    pop(vm); // popping function object off stack
+    return false;
+  }
+  pop(vm); // popping function object off stack
 
   vm->frameCount++;
+  if (vm->frameCount == FRAMES_MAX) {
+    error("stack overflow");
+    return false;
+  }
+
   CallFrame* newFrame = &vm->frame[vm->frameCount - 1];
-  newFrame->func = AS_FUNC(val);
+  newFrame->func = func;
   newFrame->ip = newFrame->func->chunk.code;
   newFrame->basePointer = vm->stackTop - newFrame->func->numArgs;
 
   return true;
 }
 
+
+static int resolveLocal(VM* vm, const CallFrame* frame) {
+  int index = (int)AS_NUMBER(pop(vm));
+  for (Value* current = frame->basePointer + index; current < vm->stackTop; current++) {
+    if (current->isLocal) {
+      break;
+    }
+    index++;
+  }
+  return index;
+}
 
 static InterpretResult run(VM* vm) {
 
@@ -360,13 +400,18 @@ static InterpretResult run(VM* vm) {
         break;
       }
       case OP_GET_LOCAL: {
-        int index = (int)AS_NUMBER(pop(vm));
+        int index = resolveLocal(vm, frame);
         push(vm, frame->basePointer[index]);
         break;
       }
       case OP_SET_LOCAL: {
-        int index = (int)AS_NUMBER(pop(vm));
+        int index = resolveLocal(vm, frame);
         frame->basePointer[index] = pop(vm);
+        break;
+      }
+      case OP_MARK_LOCAL: {
+        Value* val = vm->stackTop - 1;
+        val->isLocal = true;
         break;
       }
       case OP_CALL: {
@@ -374,7 +419,8 @@ static InterpretResult run(VM* vm) {
         // should be on the top of the stack
         // the base pointer should be the address of the first arg (if any)
         // the top of the stack will be one past the last arg
-        if (!call(vm)) {
+        uint8_t callArgs = READ_BYTE();
+        if (!call(vm, callArgs)) {
           return RUNTIME_ERROR;
         }
         break;
@@ -411,13 +457,17 @@ static InterpretResult run(VM* vm) {
       case OP_POP:
         pop(vm);
         break;
-      case OP_RETURN:
+      case OP_RETURN: {
+        Value val = pop(vm); // grab return value
         if (vm->frameCount - 1 == 0) {
           return INTERPRET_OK;
         }
+
+        setReturnVal(vm, val);
         vm->frameCount--;
         vm->stackTop = frame->basePointer;
         break;
+      }
     }
   }
 

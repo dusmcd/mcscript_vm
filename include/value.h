@@ -2,6 +2,7 @@
 #define MCSCRIPT_VM_VALUE_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #define AS_NUMBER(value) value.as.number
 #define AS_BOOL(value) value.as.boolean
@@ -32,6 +33,8 @@ typedef enum {
   VAL_NULL 
 } ValueType;
 
+  
+
 typedef union {
   double number; // => VAL_NUMBER
   bool boolean; // => VAL_BOOL
@@ -45,6 +48,7 @@ typedef union {
 typedef struct {
   ValueType type;
   ValueData as;
+  bool isLocal;
 } Value;
 
 /**
