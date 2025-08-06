@@ -21,6 +21,7 @@
 #define AS_WHILESTMT(stmt) stmt.data.whileStmt
 #define AS_ASSIGNSTMT(stmt) stmt.data.assignStmt
 #define AS_FUNCSTMT(stmt) stmt.data.funcStmt
+#define AS_RETURNSTMT(stmt) stmt.data.returnStmt
 
 typedef struct expression Expression;
 typedef struct Statement Statement;

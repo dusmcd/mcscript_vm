@@ -94,7 +94,7 @@ bool tableGet(Table* table, ObjString* key, Value* value) {
 /**
  * create an array of entries will null values
  */
-static void adjustCapacity(Table* table) {
+static void adjustCapacity(Table* table, int oldCapacity) {
   Entry* entries = ALLOCATE(Entry, table->capacity);
   for (int i = 0; i < table->capacity; i++) {
     entries[i].key = NULL;
@@ -107,7 +107,7 @@ static void adjustCapacity(Table* table) {
    */
   if (table->count > 0) {
     table->count = 0;
-    for (int i = 0; i < table->capacity; i++) {
+    for (int i = 0; i < oldCapacity; i++) {
       Entry* entry = &table->entries[i];
       if (entry->key == NULL) continue;
 
@@ -131,8 +131,9 @@ static void adjustCapacity(Table* table) {
 
 bool tableSet(Table* table, ObjString* key, Value value) {
   if (table->count + 1 > table->capacity * TABLE_MAX_LOAD) {
+    int oldCapacity = table->capacity;
     table->capacity = GROW_CAPACITY(table->capacity);
-    adjustCapacity(table);
+    adjustCapacity(table, oldCapacity);
   }
 
   Entry* entry = findEntry(table->entries, key, table->capacity);

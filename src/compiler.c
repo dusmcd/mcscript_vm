@@ -517,10 +517,23 @@ static bool compileFunctionStatement(VM* vm, const Statement* stmt) {
   return true;
 }
 
+static bool compileReturnStatement(VM* vm, const Statement* stmt) {
+  ReturnStatement rs = AS_RETURNSTMT((*stmt));
+
+  if (!compileExpression(vm, &rs.expression)) {
+    return false;
+  }
+  compileReturnVal(vm, &rs.expression);
+
+  writeChunk(&CURRENT_CHUNK(vm), OP_RETURN, rs.token.line);
+  return true;
+}
+
 static bool compileStatement(VM* vm, const Statement* stmt) {
   switch(stmt->type) {
     case STMT_RETURN:
       // compile return statement
+      return compileReturnStatement(vm, stmt);
       break;
     case STMT_VAR:
       return compileVarStatement(vm, stmt);
