@@ -10,10 +10,12 @@
 #define OBJ_TYPE(value) AS_OBJ(value)->type
 #define IS_STRING(value) isObjType(value, OBJ_STRING)
 #define IS_FUNC(value) isObjType(value, OBJ_FUNCTION)
+#define IS_NATIVE(value) isObjType(value, OBJ_NATIVE)
 
 #define AS_STRING(value) (ObjString*)AS_OBJ(value)
 #define AS_CSTRING(value) ((ObjString*)AS_OBJ(value))->str
 #define AS_FUNC(value) (ObjFunction*)AS_OBJ(value)
+#define AS_NATIVE(value) (ObjNative*)AS_OBJ(value)
 #define CHUNK(func) func.chunk
 
 
@@ -22,7 +24,8 @@
  */
 typedef enum {
   OBJ_STRING,
-  OBJ_FUNCTION
+  OBJ_FUNCTION,
+  OBJ_NATIVE
 } ObjType;
 
 /**
@@ -55,6 +58,20 @@ struct objString {
   Chunk chunk;
 };
 
+/**
+ * function pointer to native C functions
+ * I.e., clock, read file, write file, etc.
+ */
+typedef Value (*NativeFunc)(int numArgs, Value* args);
+
+/**
+ * object to wrap native C functions
+ */
+typedef struct {
+  Obj obj;
+  NativeFunc func;
+} ObjNative;
+
 static inline bool isObjType(Value value, ObjType type) {
   return IS_OBJ(value) && AS_OBJ(value)->type == type;
 }
@@ -67,8 +84,6 @@ ObjString* allocateString(VM* vm, char* str);
 /**
  * create a string from an AST Expression
  * allocates char array on heap
- * don't forget to free it if passing to allocateString and
- * not using again
  */
 char* createString(const Expression* expr);
 
@@ -78,5 +93,6 @@ char* createString(const Expression* expr);
 uint32_t hashString(const char* key, int length);
 
 ObjFunction* newFunction(VM* vm);
+ObjNative* newNative(VM* vm, NativeFunc func);
 
 #endif

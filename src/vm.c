@@ -13,6 +13,7 @@
 #include <object.h>
 #include <string.h>
 #include <table.h>
+#include <native.h>
 
 const char* funcName = NULL;
 
@@ -34,6 +35,7 @@ void initVM(VM* vm, Compiler* compiler) {
   vm->objects = NULL;
   initTable(&vm->globals);
   setReturnVal(vm, NULL_VAL);
+  defineNatives(vm);
 
 }
 
@@ -275,6 +277,14 @@ static bool callValue(VM* vm, int callArgs) {
       case OBJ_FUNCTION: {
         ObjFunction* func = AS_FUNC(val);
         return call(vm, func, callArgs);
+      }
+      case OBJ_NATIVE: {
+        ObjNative* native = AS_NATIVE(val);
+        NativeFunc func = native->func;
+        pop(vm); // pop off native object from stack
+        func(callArgs, vm->stackTop - callArgs);
+        vm->stackTop -= callArgs;
+        break;
       }
       default:
         error("value being called must be a function object");

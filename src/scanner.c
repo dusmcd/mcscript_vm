@@ -178,12 +178,6 @@ static TokenType getIdentifierType(Scanner* scanner, int length) {
         return TOKEN_OR;
       }
       break;
-    case 'p':
-      if (length == 5 &&
-          memcmp(scanner->start + 1, "rint", 4) == 0) {
-        return TOKEN_PRINT;
-      }
-      break;
     case 'r':
       if (length == 6 &&
           memcmp(scanner->start + 1, "eturn",5) == 0) {

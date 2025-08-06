@@ -38,6 +38,10 @@ static void printObject(ObjType type, Value val) {
       printf("function<%s>", func->name->str);
       break;
     }
+    case OBJ_NATIVE: {
+      printf("<native code>");
+      break;
+    }
   }
 }
 

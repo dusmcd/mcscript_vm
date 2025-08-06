@@ -74,3 +74,14 @@ ObjFunction* newFunction(VM* vm) {
 
   return func;
 }
+
+ObjNative* newNative(VM* vm, NativeFunc func) {
+  ObjNative* native = ALLOCATE(ObjNative, 1);
+  if (native == NULL) return NULL;
+
+  native->obj.type = OBJ_NATIVE;
+  native->func = func;
+
+  trackObject(vm, (Obj*)native);
+  return native;
+}
