@@ -234,18 +234,7 @@ static bool concatenate(VM* vm) {
   return true;
 }
 
-static bool call(VM* vm, uint8_t callArgs) {
-  Value val = peek(vm, 1);
-  if (!(IS_OBJ(val))) {
-    error("value being called must be a function object");
-    return false;
-  }
-  if (!(IS_FUNC(val))) {
-    error("value being called must be a function object");
-    return false;
-  }
-
-  ObjFunction* func = AS_FUNC(val);
+static bool call(VM* vm, ObjFunction* func, uint8_t callArgs) {
   if (func->numArgs != callArgs) {
     error("wrong number of args");
     pop(vm); // popping function object off stack
@@ -277,6 +266,23 @@ static int resolveLocal(VM* vm, const CallFrame* frame) {
     index++;
   }
   return index;
+}
+
+static bool callValue(VM* vm, int callArgs) {
+  Value val = peek(vm, 1);
+  if (IS_OBJ(val)) {
+    switch(AS_OBJ(val)->type) {
+      case OBJ_FUNCTION: {
+        ObjFunction* func = AS_FUNC(val);
+        return call(vm, func, callArgs);
+      }
+      default:
+        error("value being called must be a function object");
+        return false;
+
+    }
+  }
+  return true;
 }
 
 static InterpretResult run(VM* vm) {
@@ -420,7 +426,7 @@ static InterpretResult run(VM* vm) {
         // the base pointer should be the address of the first arg (if any)
         // the top of the stack will be one past the last arg
         uint8_t callArgs = READ_BYTE();
-        if (!call(vm, callArgs)) {
+        if (!callValue(vm, callArgs)) {
           return RUNTIME_ERROR;
         }
         break;
