@@ -1,4 +1,3 @@
-#include "vm.h"
 #include <memory.h>
 #include <ast.h>
 #include <value.h>
