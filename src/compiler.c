@@ -562,6 +562,8 @@ static bool compileStatement(VM* vm, const Statement* stmt) {
     }
     case STMT_NULL:
       return true;
+    case STMT_ERROR:
+      return false;
   } 
   return true;
 }

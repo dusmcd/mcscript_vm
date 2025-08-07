@@ -274,11 +274,12 @@ static ReturnStatement parseReturnStatement(Parser* parser, Scanner* scanner) {
 
 static VarStatement parseVarStatement(Parser* parser, Scanner* scanner) {
   VarStatement vs = {.token = parser->previous};
+  VarStatement errorResult = {.token = {.type = TOKEN_NULL}};
 
   if (!expect(parser, scanner, TOKEN_IDENTIFIER)) {
     // handle error
     error(parser, "expected identifier");
-    return vs;
+    return errorResult;
   }
 
   vs.name = createName(parser);
@@ -335,10 +336,11 @@ static BlockStatement parseBlockStatement(Parser* parser, Scanner* scanner) {
 
 static IfStatement parseIfStatement(Parser* parser, Scanner* scanner) {
   IfStatement is = {.token = parser->previous};
+  IfStatement errorResult = {.token = {.type = TOKEN_NULL}};
 
   if (!expect(parser, scanner, TOKEN_LEFT_PAREN)) {
     error(parser, "expected open paren");
-    return is;
+    return errorResult;
   }
 
   // consume the left paren
@@ -350,12 +352,12 @@ static IfStatement parseIfStatement(Parser* parser, Scanner* scanner) {
 
   if (!expect(parser, scanner, TOKEN_RIGHT_PAREN)) {
     error(parser, "expected closing paren");
-    return is;
+    return errorResult;
   }
 
   if (!expect(parser, scanner, TOKEN_LEFT_BRACE)) {
     error(parser, "expected opening brace");
-    return is;
+    return errorResult;
   }
 
   is.block = parseBlockStatement(parser, scanner);
@@ -375,10 +377,11 @@ static IfStatement parseIfStatement(Parser* parser, Scanner* scanner) {
 
 static WhileStatement parseWhileStatement(Parser* parser, Scanner* scanner) {
   WhileStatement ws = {.token = parser->previous};
+  WhileStatement errorResult = {.token = {.type = TOKEN_NULL}};
 
   if (!expect(parser, scanner, TOKEN_LEFT_PAREN)) {
     error(parser, "expected opening paren");
-    return (WhileStatement){.token = {.type = TOKEN_NULL}};
+    return errorResult;
   }
 
   // consume opening paren
@@ -387,16 +390,16 @@ static WhileStatement parseWhileStatement(Parser* parser, Scanner* scanner) {
   ws.condition = parseExpression(parser, scanner, PREC_NONE);
 
   if (ws.condition.type == EXPR_ERROR) {
-    return (WhileStatement){.token = {.type = TOKEN_NULL}};
+    return errorResult;
   }
 
   if (!expect(parser, scanner, TOKEN_RIGHT_PAREN)) {
     error(parser, "expected closing paren");
-    return (WhileStatement){.token = {.type = TOKEN_NULL}};
+    return errorResult;
   }
   if (!expect(parser, scanner, TOKEN_LEFT_BRACE)) {
     error(parser, "expected opening brace");
-    return (WhileStatement){.token = {.type = TOKEN_NULL}};
+    return errorResult;
   }
 
   ws.block = parseBlockStatement(parser, scanner);
@@ -406,10 +409,11 @@ static WhileStatement parseWhileStatement(Parser* parser, Scanner* scanner) {
 
 static AssignStatement parseAssignStatement(Parser* parser, Scanner* scanner) {
   AssignStatement as = {.token = parser->previous, .name = createName(parser)};
+  AssignStatement errorResult = {.token = {.type = TOKEN_NULL}};
 
   if (!expect(parser, scanner, TOKEN_EQUAL)) {
     error(parser, "expected assignment operator");
-    return (AssignStatement){.token = {.type = TOKEN_NULL}};
+    return errorResult;
   }
 
   // consume equal token
@@ -417,13 +421,14 @@ static AssignStatement parseAssignStatement(Parser* parser, Scanner* scanner) {
 
   as.value = parseExpression(parser, scanner, PREC_NONE);
   if (as.value.type == EXPR_ERROR) {
-    return (AssignStatement){.token = {.type = TOKEN_NULL}};
+    return errorResult;
   }
 
   return as;
 }
 static FunctionStatement parseFunctionStatement(Parser* parser, Scanner* scanner) {
   FunctionStatement fs = {.token = parser->previous, .argCount = 0};
+  FunctionStatement errorResult = {.token ={.type = TOKEN_NULL}};
   // consume function keyword
   advance(parser, scanner);
 
@@ -431,16 +436,24 @@ static FunctionStatement parseFunctionStatement(Parser* parser, Scanner* scanner
 
   if (!expect(parser, scanner, TOKEN_LEFT_PAREN)) {
     error(parser, "expected opening paren");
-    return (FunctionStatement){.token = {.type = TOKEN_NULL}};
+    return errorResult;
   }
   
   if (parser->current.type != TOKEN_RIGHT_PAREN) {
     advance(parser, scanner);
+    if (parser->previous.type != TOKEN_IDENTIFIER) {
+      error(parser, "must pass identifiers in function definition");
+      return errorResult;
+    }
     fs.args[fs.argCount++] = createName(parser);
 
     while (parser->current.type == TOKEN_COMMA) {
       advance(parser, scanner);
       advance(parser, scanner);
+      if (parser->previous.type != TOKEN_IDENTIFIER) {
+        error(parser, "must pass identifiers in function definition");
+        return errorResult;
+      }
       fs.args[fs.argCount++] = createName(parser);
     }
   }
@@ -450,7 +463,7 @@ static FunctionStatement parseFunctionStatement(Parser* parser, Scanner* scanner
 
   if (!expect(parser, scanner, TOKEN_LEFT_BRACE)) {
     error(parser, "expected opening brace");
-    return (FunctionStatement){.token = {.type = TOKEN_NULL}};
+    return errorResult;
   }
 
   fs.block = parseBlockStatement(parser, scanner);
@@ -469,7 +482,7 @@ static Statement parseStatement(Parser* parser, Scanner* scanner) {
     }
     case TOKEN_VAR: {
       VarStatement vs = parseVarStatement(parser, scanner);
-      stmt.type = STMT_VAR;
+      stmt.type = vs.token.type == TOKEN_NULL ? STMT_ERROR : STMT_VAR;
       stmt.data.varStmt = vs;
       break;
     }
@@ -482,13 +495,13 @@ static Statement parseStatement(Parser* parser, Scanner* scanner) {
     }
     case TOKEN_IF: {
       IfStatement is = parseIfStatement(parser, scanner);
-      stmt.type = STMT_IF;
+      stmt.type = is.token.type == TOKEN_NULL ? STMT_ERROR : STMT_IF;
       stmt.data.ifStmt = is;
       break;
     }
     case TOKEN_WHILE: {
       WhileStatement ws = parseWhileStatement(parser, scanner);
-      stmt.type = STMT_WHILE;
+      stmt.type = ws.token.type == TOKEN_NULL ? STMT_ERROR : STMT_WHILE;
       stmt.data.whileStmt = ws;
       break;
     }
@@ -501,13 +514,13 @@ static Statement parseStatement(Parser* parser, Scanner* scanner) {
       }
 
       AssignStatement as = parseAssignStatement(parser, scanner);
-      stmt.type = STMT_ASSIGN;
+      stmt.type = as.token.type == TOKEN_NULL ? STMT_ERROR : STMT_ASSIGN;
       stmt.data.assignStmt = as;
       break;
     }
     case TOKEN_FUNCTION: {
       FunctionStatement fs = parseFunctionStatement(parser, scanner);
-      stmt.type = STMT_FUNCTION;
+      stmt.type = fs.token.type == TOKEN_NULL ? STMT_ERROR : STMT_FUNCTION;
       stmt.data.funcStmt = fs;
       break;
     }
@@ -521,7 +534,6 @@ static Statement parseStatement(Parser* parser, Scanner* scanner) {
       break;
     }
   }
-
   return stmt;
 }
 

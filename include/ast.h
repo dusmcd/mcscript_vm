@@ -41,6 +41,7 @@ typedef enum {
   STMT_WHILE,
   STMT_ASSIGN,
   STMT_FUNCTION,
+  STMT_ERROR,
   STMT_NULL
 } StatementType;
 
