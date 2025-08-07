@@ -422,7 +422,9 @@ static InterpretResult run(VM* vm) {
       }
       case OP_SET_LOCAL: {
         int index = resolveLocal(vm, frame);
-        frame->basePointer[index] = pop(vm);
+        Value newVal = pop(vm);
+        newVal.isLocal = true;
+        frame->basePointer[index] = newVal;
         break;
       }
       case OP_MARK_LOCAL: {
