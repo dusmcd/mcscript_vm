@@ -245,7 +245,7 @@ static bool call(VM* vm, ObjFunction* func, uint8_t callArgs) {
   pop(vm); // popping function object off stack
 
   vm->frameCount++;
-  if (vm->frameCount == FRAMES_MAX) {
+  if (vm->frameCount > FRAMES_MAX) {
     error("stack overflow");
     return false;
   }
@@ -291,7 +291,11 @@ static bool callValue(VM* vm, int callArgs) {
         return false;
 
     }
+  } else {
+      error("value being called must be a function object");
+      return false;
   }
+
   return true;
 }
 
