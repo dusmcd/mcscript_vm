@@ -1,3 +1,4 @@
+#include "value.h"
 #include <memory.h>
 #include <native.h>
 #include <table.h>
@@ -45,6 +46,12 @@ static Value readFile(VM* vm, int numArgs, Value* args) {
     return NULL_VAL;
   }
   str[size] = '\0';
+
+  if (fclose(file) == -1) {
+    fprintf(stderr, "ERROR: error closing file\n");
+    free(str);
+    return NULL_VAL;
+  }
 
   ObjString* obj = allocateString(vm, str);
   return OBJ_VAL(obj);
