@@ -282,7 +282,11 @@ static bool callValue(VM* vm, int callArgs) {
         ObjNative* native = AS_NATIVE(val);
         NativeFunc func = native->func;
         pop(vm); // pop off native object from stack
-        func(callArgs, vm->stackTop - callArgs);
+        Value result = func(vm, callArgs, vm->stackTop - callArgs);
+        if (result.type != VAL_NULL) {
+          setReturnVal(vm, result);
+        }
+
         vm->stackTop -= callArgs;
         break;
       }

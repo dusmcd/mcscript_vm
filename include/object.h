@@ -62,7 +62,7 @@ struct objString {
  * function pointer to native C functions
  * I.e., clock, read file, write file, etc.
  */
-typedef Value (*NativeFunc)(int numArgs, Value* args);
+typedef Value (*NativeFunc)(VM* vm, int numArgs, Value* args);
 
 /**
  * object to wrap native C functions
