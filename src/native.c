@@ -20,6 +20,41 @@ static Value print(VM* vm, int numArgs, Value* args) {
   return NULL_VAL;
 }
 
+static Value writeTextToFile(VM* vm, int numArgs, Value* args) {
+  if (numArgs != 2) {
+    fprintf(stderr, "ERROR: expecting two arguments\n");
+    return NULL_VAL;
+  }
+
+  Value fileNameVal = args[0];
+  if (!(IS_OBJ(fileNameVal)) || !(IS_STRING(fileNameVal))) {
+    fprintf(stderr, "ERROR: expecting a string for the file name\n");
+    return NULL_VAL;
+  }
+
+  const char* fileName = AS_CSTRING(fileNameVal);
+  FILE* file = fopen(fileName, "w");
+  if (file == NULL) {
+    fprintf(stderr, "ERROR: could not open file\n");
+    return NULL_VAL;
+  }
+
+  Value dataVal = args[1];
+  if (!(IS_OBJ(dataVal)) || !(IS_STRING(dataVal))) {
+    fprintf(stderr, "ERROR: expecting a string for data\n");
+    return NULL_VAL;
+  }
+
+  const char* data = AS_CSTRING(dataVal);
+  fprintf(file, "%s\n", data);
+
+  if (fclose(file) == -1) {
+    fprintf(stderr, "ERROR: error closing file\n");
+    return NULL_VAL;
+  }
+  return BOOL_VAL(true);
+}
+
 static Value readFile(VM* vm, int numArgs, Value* args) {
   if (numArgs != 1 || !(IS_OBJ(args[0])) || !(IS_STRING(args[0]))) {
     fprintf(stderr, "ERROR: must pass one string for file name\n");
@@ -38,7 +73,7 @@ static Value readFile(VM* vm, int numArgs, Value* args) {
   rewind(file);
 
   char* str = ALLOCATE(char, size + 1);
-  // change this to fread
+
   int bytesRead = fread(str, 1, size, file);
   if (bytesRead != size) {
     fprintf(stderr, "ERROR: error reading file\n");
@@ -79,5 +114,9 @@ void defineNatives(VM* vm) {
 
   native = newNative(vm, readFile);
   key = createKey(vm, "readFile");
+  tableSet(&vm->globals, key, OBJ_VAL(native));
+
+  native = newNative(vm, writeTextToFile);
+  key = createKey(vm, "readTextToFile");
   tableSet(&vm->globals, key, OBJ_VAL(native));
 }
